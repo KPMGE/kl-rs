@@ -23,6 +23,8 @@ impl Lexer {
     pub fn next_token(&mut self) -> Token {
         let keywords_map = HashMap::from([("fn", Token::Function), ("let", Token::Let)]);
 
+        self.skip_whitespaces();
+
         let token = match self.current_char {
             Some('(') => Token::RightParentesis,
             Some(')') => Token::LeftParentesis,
@@ -32,7 +34,7 @@ impl Lexer {
             Some('+') => Token::Plus,
             Some(',') => Token::Comma,
             Some(c) => {
-                if c.is_alphabetic() {
+                if c.is_letter() {
                     let identifier = self.read_identifier();
                     match keywords_map.get(&identifier.as_str()) {
                         Some(tok) => tok.clone(),
@@ -53,7 +55,7 @@ impl Lexer {
         let start_pos = self.current_position;
 
         while let Some(c) = self.current_char {
-            if c.is_alphabetic() {
+            if c.is_letter() {
                 self.read_char();
                 continue
             }
@@ -75,5 +77,30 @@ impl Lexer {
         self.current_char = ch;
         self.current_position = self.read_position;
         self.read_position += 1;
+    }
+
+    fn skip_whitespaces(&mut self) {
+        while let Some(c) = self.current_char {
+            if c.is_whitespace() {
+                self.read_char();
+                continue
+            }
+            break
+        }
+    }
+
+}
+
+trait IsLetter {
+    fn is_letter(&self) -> bool;
+}
+
+impl IsLetter for char {
+    fn is_letter(&self) -> bool {
+        ('a'..'z').contains(self) || ('A'..'Z').contains(self)
+        // match *self {
+        //     'a' .. 'z' | 'A' .. 'Z' => true,
+        //     _ => false
+        // }
     }
 }
