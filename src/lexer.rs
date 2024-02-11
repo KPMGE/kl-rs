@@ -21,7 +21,15 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-        let keywords_map = HashMap::from([("fn", Token::Function), ("let", Token::Let)]);
+        let keywords_map = HashMap::from([
+            ("fn", Token::Function), 
+            ("let", Token::Let), 
+            ("if", Token::If),
+            ("else", Token::Else),
+            ("true", Token::True),
+            ("false", Token::False),
+            ("return", Token::Return),
+        ]);
 
         self.skip_whitespaces();
 
