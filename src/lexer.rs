@@ -44,15 +44,31 @@ impl Lexer {
             ')' => Token::LeftParentesis,
             '{' => Token::RightBrace,
             '}' => Token::LeftBrace,
-            '=' => Token::Assign,
             '+' => Token::Plus,
             '-' => Token::Minus,
-            '!' => Token::Bang,
             '*' => Token::Asterisk,
             '<' => Token::LessThan,
             '>' => Token::GreaterThan,
             ',' => Token::Comma,
             '/' => Token::Slash,
+            '=' => {
+                match self.peek_char(self.read_position) {
+                    Some('=') => {
+                        self.read_char();
+                        Token::Equals
+                    },
+                    _ => Token::Assign 
+                }
+            },
+            '!' => {
+                match self.peek_char(self.read_position) {
+                    Some('=') => { 
+                        self.read_char();
+                        Token::NotEquals
+                    },
+                    _ => Token::Bang 
+                }
+            },
             c => {
                 if c.is_letter() {
                     let identifier = self.read_identifier();
@@ -102,6 +118,10 @@ impl Lexer {
 
         let identifier = &self.input[start_pos..self.current_position];
         identifier.to_string()
+    }
+
+    fn peek_char(&self, pos: usize) -> Option<char> {
+        self.input.chars().nth(pos)
     }
 
     fn read_char(&mut self) {

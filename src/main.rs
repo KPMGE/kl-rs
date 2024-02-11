@@ -6,7 +6,7 @@ use token::Token;
 use crate::lexer::Lexer;
 
 fn main() {
-    let code = "true false    if else return let fn";
+    let code = "true false    if else return let fn =   == !=";
     let mut lexer = Lexer::new(code.to_string());
 
     loop {
