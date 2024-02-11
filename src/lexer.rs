@@ -38,7 +38,13 @@ impl Lexer {
             '}' => Token::LeftBrace,
             '=' => Token::Assign,
             '+' => Token::Plus,
+            '-' => Token::Minus,
+            '!' => Token::Bang,
+            '*' => Token::Asterisk,
+            '<' => Token::LessThan,
+            '>' => Token::GreaterThan,
             ',' => Token::Comma,
+            '/' => Token::Slash,
             c => {
                 if c.is_letter() {
                     let identifier = self.read_identifier();
