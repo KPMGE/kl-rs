@@ -6,7 +6,7 @@ use token::Token;
 use crate::lexer::Lexer;
 
 fn main() {
-    let code = "let     fn";
+    let code = "let     fn    2023 4234";
     let mut lexer = Lexer::new(code.to_string());
 
     loop {

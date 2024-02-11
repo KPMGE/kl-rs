@@ -25,31 +25,55 @@ impl Lexer {
 
         self.skip_whitespaces();
 
-        let token = match self.current_char {
-            Some('(') => Token::RightParentesis,
-            Some(')') => Token::LeftParentesis,
-            Some('{') => Token::RightBrace,
-            Some('}') => Token::LeftBrace,
-            Some('=') => Token::Assign,
-            Some('+') => Token::Plus,
-            Some(',') => Token::Comma,
-            Some(c) => {
+        if self.current_char.is_none() {
+            return Token::Eof;
+        }
+
+        let ch = self.current_char.unwrap();
+
+        let token = match ch {
+            '(' => Token::RightParentesis,
+            ')' => Token::LeftParentesis,
+            '{' => Token::RightBrace,
+            '}' => Token::LeftBrace,
+            '=' => Token::Assign,
+            '+' => Token::Plus,
+            ',' => Token::Comma,
+            c => {
                 if c.is_letter() {
                     let identifier = self.read_identifier();
-                    match keywords_map.get(&identifier.as_str()) {
+                    return match keywords_map.get(&identifier.as_str()) {
                         Some(tok) => tok.clone(),
                         None => Token::Identifier(identifier),
                     }
-                } else {
-                    Token::Illegal
+                } 
+
+                if c.is_ascii_digit() {
+                    let num = self.read_number();
+                    return Token::Int(num.to_string());
                 }
+
+                Token::Illegal
             }
-            None => Token::Eof,
         };
         
         self.read_char();
         token
     }
+
+    fn read_number(&mut self) -> String {
+        let start_pos = self.current_position;
+
+        while let Some(c) = self.current_char {
+            if c.is_ascii_digit() {
+                self.read_char();
+                continue
+            }
+            break
+        }
+
+        self.input[start_pos..self.current_position].to_string()
+   }
 
     fn read_identifier(&mut self) -> String {
         let start_pos = self.current_position;
