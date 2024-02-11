@@ -1,14 +1,20 @@
 mod lexer;
 mod token;
 
+use token::Token;
+
 use crate::lexer::Lexer;
 
 fn main() {
-    let code = "(),{}=";
+    let code = "let fn";
     let mut lexer = Lexer::new(code.to_string());
 
-    (0..code.len()).for_each(|_| {
+    loop {
         let token = lexer.next_token();
+        if token == Token::Eof {
+            break;
+        }
+
         println!("token: {:?}", token);
-    })
+    }
 }
