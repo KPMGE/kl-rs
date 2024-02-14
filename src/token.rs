@@ -1,5 +1,12 @@
+
+#[derive(Debug)]
+pub struct Token {
+    pub token_type: TokenType,
+    pub literal: Option<String>
+}
+
 #[derive(Debug, Eq, Clone, PartialEq)]
-pub enum Token {
+pub enum TokenType {
     Illegal,
     Equals,
     NotEquals,
@@ -13,8 +20,8 @@ pub enum Token {
     Slash,
     GreaterThan,
     LessThan,
-    Int(String),
-    Identifier(String),
+    Int,
+    Identifier,
     LeftParentesis,
     Let,
     True,
@@ -23,6 +30,7 @@ pub enum Token {
     If,
     Else,
     Comma,
+    Semicolon,
     RightParentesis,
     LeftBrace,
     RightBrace,
