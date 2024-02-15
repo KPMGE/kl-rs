@@ -52,3 +52,15 @@ fn given_code_with_keywords_it_should_parse_correctly() {
         assert!(token == *expected_token);
     });
 }
+
+#[test]
+fn given_code_with_identifiers_it_should_parse_correctly() {
+    let code = "testident";
+
+    let mut lexer = Lexer::new(code.to_string());
+
+    let token = lexer.next_token();
+    let expected_token = Token::Identifier(code.to_string());
+
+    assert!(token == expected_token);
+}
