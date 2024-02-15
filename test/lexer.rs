@@ -1,6 +1,6 @@
 #[test]
 fn given_code_with_single_characters_it_should_parse_correctly() {
-    let code = "{}()+=,";
+    let code = "{}()+=,-!*/><;";
     let expected_tokens = vec![
         Token::RightBrace,
         Token::LeftBrace,
@@ -9,6 +9,13 @@ fn given_code_with_single_characters_it_should_parse_correctly() {
         Token::Plus,
         Token::Assign,
         Token::Comma,
+        Token::Minus,
+        Token::Bang,
+        Token::Asterisk,
+        Token::Slash,
+        Token::GreaterThan,
+        Token::LessThan,
+        Token::Semicolon,
         Token::Eof,
     ];
 
