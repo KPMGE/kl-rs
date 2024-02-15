@@ -3,7 +3,7 @@ mod token;
 
 use std::io::{BufRead, Write};
 
-use crate::{lexer::Lexer, token::Token, token::TokenType};
+use crate::{lexer::Lexer, token::Token};
 
 trait AstNode {
     fn get_token_literal(&self) -> String;
@@ -14,13 +14,18 @@ trait Expression: AstNode {}
 trait Statement: AstNode {}
 
 struct IntExpression {
-    token: TokenType,
-    value: String,
+    token: Token, // Token::Int(val)
 }
 
 impl AstNode for IntExpression {
     fn get_token_literal(&self) -> String {
-        self.value.clone()
+        match &self.token {
+            Token::Int(num) => num.to_string(),
+            _ => panic!(
+                "ERROR(get_token_literal): expected token type Int, found {:?}",
+                self.token
+            ),
+        }
     }
 }
 
@@ -28,12 +33,11 @@ impl Expression for IntExpression {}
 
 #[derive(Debug)]
 struct Identifier {
-    token: TokenType,
-    value: String,
+    token: Token, // Token::Idetifier(name)
 }
 
 struct LetStatement {
-    token: TokenType,
+    token: Token, // Token::Let
     name: Identifier,
     value: Box<dyn Expression>,
 }
@@ -75,9 +79,9 @@ impl Parser {
             statements: Vec::new(),
         };
 
-        while self.current_token.token_type != TokenType::Eof {
-            match self.current_token.token_type {
-                TokenType::Let => {
+        while self.current_token != Token::Eof {
+            match self.current_token {
+                Token::Let => {
                     let statement = self.parse_let_statement();
                     program.statements.push(statement);
                 }
@@ -93,21 +97,17 @@ impl Parser {
     fn parse_let_statement(&mut self) -> LetStatement {
         self.advance_tokens();
 
-        if self.current_token.token_type != TokenType::Identifier {
+        if !matches!(self.current_token, Token::Identifier(_)) {
             panic!("ERROR(parse_let_statement): token after let must be an identifer!");
         }
-
 
         let name = self.parse_identifier();
 
         self.advance_tokens();
 
-        // println!("current: {:?}", self.current_token.token_type);
-        // println!("next: {:?}", self.next_token);
-
-        // if self.current_token.token_type != TokenType::Equals {
-        //     panic!("ERROR(parse_let_statement): token after let identifier must be an equal sign!");
-        // }
+        if self.current_token != Token::Assign {
+            panic!("ERROR(parse_let_statement): token after let identifier must be an equal sign!");
+        }
 
         self.advance_tokens();
 
@@ -115,35 +115,32 @@ impl Parser {
 
         self.advance_tokens();
 
-        if self.current_token.token_type != TokenType::Semicolon {
-            panic!("ERROR(parse_let_statement): semicolon expected");
+        if self.current_token != Token::Semicolon {
+            panic!("ERROR(parse_let_statement): semicolon expected!");
         }
 
         LetStatement {
-            token: TokenType::Let,
+            token: Token::Let,
             value: Box::new(value),
             name,
         }
     }
 
     fn parse_expression(&self) -> impl Expression {
-        match self.current_token.token_type {
-            TokenType::Int => IntExpression {
-                token: self.current_token.token_type.clone(),
-                value: self
-                    .current_token
-                    .literal
-                    .clone()
-                    .expect("ERROR(parse_expression): None value for literal"),
+        match &self.current_token {
+            Token::Int(num) => IntExpression {
+                token: Token::Int(num.to_string()),
             },
             _ => todo!(),
         }
     }
 
     fn parse_identifier(&self) -> Identifier {
-        Identifier {
-            token: self.current_token.token_type.clone(),
-            value: self.current_token.literal.clone().unwrap(),
+        match &self.current_token {
+            Token::Identifier(_) => Identifier {
+                token: self.current_token.clone(),
+            },
+            _ => panic!("ERROR(parse_identifier): expected identifier token, got {:?}", self.current_token)
         }
     }
 

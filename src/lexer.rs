@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::token::{Token, TokenType};
+use crate::token::Token;
 
 #[derive(Debug, Clone)]
 pub struct Lexer {
@@ -22,85 +22,74 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Token {
         let keywords_map = HashMap::from([
-            ("fn", TokenType::Function),
-            ("let", TokenType::Let),
-            ("if", TokenType::If),
-            ("else", TokenType::Else),
-            ("true", TokenType::True),
-            ("false", TokenType::False),
-            ("return", TokenType::Return),
+            ("fn", Token::Function), 
+            ("let", Token::Let), 
+            ("if", Token::If),
+            ("else", Token::Else),
+            ("true", Token::True),
+            ("false", Token::False),
+            ("return", Token::Return),
         ]);
 
         self.skip_whitespaces();
 
         if self.current_char.is_none() {
-            return Token {
-                token_type: TokenType::Eof,
-                literal: None,
-            };
+            return Token::Eof;
         }
 
         let ch = self.current_char.unwrap();
 
-        let token_type = match ch {
-            '(' => TokenType::RightParentesis,
-            ')' => TokenType::LeftParentesis,
-            '{' => TokenType::RightBrace,
-            '}' => TokenType::LeftBrace,
-            '+' => TokenType::Plus,
-            '-' => TokenType::Minus,
-            '*' => TokenType::Asterisk,
-            '<' => TokenType::LessThan,
-            '>' => TokenType::GreaterThan,
-            ',' => TokenType::Comma,
-            '/' => TokenType::Slash,
-            ';' => TokenType::Semicolon,
-            '=' => match self.peek_char(self.read_position) {
-                Some('=') => {
-                    self.read_char();
-                    TokenType::Equals
+        let token = match ch {
+            '(' => Token::RightParentesis,
+            ')' => Token::LeftParentesis,
+            '{' => Token::RightBrace,
+            '}' => Token::LeftBrace,
+            '+' => Token::Plus,
+            '-' => Token::Minus,
+            '*' => Token::Asterisk,
+            '<' => Token::LessThan,
+            '>' => Token::GreaterThan,
+            ',' => Token::Comma,
+            '/' => Token::Slash,
+            ';' => Token::Semicolon,
+            '=' => {
+                match self.peek_char(self.read_position) {
+                    Some('=') => {
+                        self.read_char();
+                        Token::Equals
+                    },
+                    _ => Token::Assign 
                 }
-                _ => TokenType::Assign,
             },
-            '!' => match self.peek_char(self.read_position) {
-                Some('=') => {
-                    self.read_char();
-                    TokenType::NotEquals
+            '!' => {
+                match self.peek_char(self.read_position) {
+                    Some('=') => { 
+                        self.read_char();
+                        Token::NotEquals
+                    },
+                    _ => Token::Bang 
                 }
-                _ => TokenType::Bang,
             },
             c => {
                 if c.is_letter() {
                     let identifier = self.read_identifier();
                     return match keywords_map.get(&identifier.as_str()) {
-                        Some(tok) => Token {
-                            token_type: tok.clone(),
-                            literal: Some(identifier),
-                        },
-                        None => Token {
-                            token_type: TokenType::Identifier,
-                            literal: Some(identifier),
-                        },
-                    };
-                }
+                        Some(tok) => tok.clone(),
+                        None => Token::Identifier(identifier),
+                    }
+                } 
 
                 if c.is_ascii_digit() {
                     let num = self.read_number();
-                    return Token {
-                        token_type: TokenType::Int,
-                        literal: Some(num.to_string()),
-                    };
+                    return Token::Int(num.to_string());
                 }
 
-                TokenType::Illegal
+                Token::Illegal
             }
         };
-
+        
         self.read_char();
-        Token {
-            token_type,
-            literal: None,
-        }
+        token
     }
 
     fn read_number(&mut self) -> String {
@@ -109,13 +98,13 @@ impl Lexer {
         while let Some(c) = self.current_char {
             if c.is_ascii_digit() {
                 self.read_char();
-                continue;
+                continue
             }
-            break;
+            break
         }
 
         self.input[start_pos..self.current_position].to_string()
-    }
+   }
 
     fn read_identifier(&mut self) -> String {
         let start_pos = self.current_position;
@@ -123,9 +112,9 @@ impl Lexer {
         while let Some(c) = self.current_char {
             if c.is_letter() {
                 self.read_char();
-                continue;
+                continue
             }
-            break;
+            break
         }
 
         let identifier = &self.input[start_pos..self.current_position];
@@ -153,11 +142,12 @@ impl Lexer {
         while let Some(c) = self.current_char {
             if c.is_whitespace() {
                 self.read_char();
-                continue;
+                continue
             }
-            break;
+            break
         }
     }
+
 }
 
 trait IsLetter {
