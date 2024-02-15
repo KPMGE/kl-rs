@@ -156,7 +156,7 @@ trait IsLetter {
 
 impl IsLetter for char {
     fn is_letter(&self) -> bool {
-        ('a'..'z').contains(self) || ('A'..'Z').contains(self)
+        ('a'..='z').contains(self) || ('A'..='Z').contains(self)
         // match *self {
         //     'a' .. 'z' | 'A' .. 'Z' => true,
         //     _ => false
