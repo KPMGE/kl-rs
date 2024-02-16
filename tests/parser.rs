@@ -1,4 +1,8 @@
-use kl_rs::{parser::Parser, lexer::Lexer, ast::AstNode};
+use kl_rs::{
+    ast::AstNode,
+    lexer::Lexer,
+    parser::{Parser, Statement},
+};
 
 #[test]
 fn given_let_statements_with_single_integers_shold_parse_correctly() {
@@ -17,14 +21,19 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
 
     assert_eq!(parsed_program.statements.len(), 3);
     assert_eq!(parser.errors.len(), 0);
-    (0..parsed_program.statements.len()).for_each(|idx| {
-        let identifier = parsed_program.statements[idx].name.get_token_literal();
-        let value = parsed_program.statements[idx].value.get_token_literal();
 
-        let expected_identifier = expected_identifiers[idx];
-        let expected_int = expected_ints[idx];
+    parsed_program
+        .statements
+        .iter()
+        .enumerate()
+        .for_each(|(idx, statement)| match statement {
+            Statement::LetStatement { value, name, .. } => {
+                let expected_identifier = expected_identifiers[idx];
+                let expected_int = expected_ints[idx];
 
-        assert_eq!(expected_int, value);
-        assert_eq!(expected_identifier, identifier);
-    })
+                assert_eq!(expected_identifier, name.get_token_literal());
+                assert_eq!(expected_int, value.get_token_literal());
+            }
+            _ => panic!("wrong statement!"),
+        })
 }

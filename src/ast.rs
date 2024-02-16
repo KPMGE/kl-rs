@@ -3,5 +3,3 @@ pub trait AstNode {
 }
 
 pub trait Expression: AstNode {}
-
-pub trait Statement: AstNode {}

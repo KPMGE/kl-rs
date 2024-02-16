@@ -1,5 +1,5 @@
 use crate::{
-    ast::{AstNode, Expression, Statement},
+    ast::{AstNode, Expression},
     lexer::Lexer,
     token::Token,
 };
@@ -14,18 +14,20 @@ pub struct Identifier {
     token: Token, // Token::Idetifier(name)
 }
 
-pub struct LetStatement {
-    pub token: Token, // Token::Let
-    pub name: Identifier,
-    pub value: Box<dyn Expression>,
+pub enum Statement {
+    LetStatement {
+        token: Token, // Token::Let
+        name: Identifier,
+        value: Box<dyn Expression>,
+    },
+    ReturnStatement {
+        token: Token, // Token::Return
+        value: Box<dyn Expression>,
+    },
 }
 
-#[derive(Debug)]
-pub struct Program<T>
-where
-    T: Statement,
-{
-    pub statements: Vec<T>,
+pub struct Program {
+    pub statements: Vec<Statement>,
 }
 
 #[derive(Debug)]
@@ -49,7 +51,7 @@ impl Parser {
         }
     }
 
-    pub fn parse_program(&mut self) -> Program<LetStatement> {
+    pub fn parse_program(&mut self) -> Program {
         let mut program = Program {
             statements: Vec::new(),
         };
@@ -58,6 +60,11 @@ impl Parser {
             match self.current_token {
                 Token::Let => {
                     if let Some(statement) = self.parse_let_statement() {
+                        program.statements.push(statement);
+                    }
+                }
+                Token::Return => {
+                    if let Some(statement) = self.parse_return_statement() {
                         program.statements.push(statement);
                     }
                 }
@@ -70,7 +77,7 @@ impl Parser {
         program
     }
 
-    fn parse_let_statement(&mut self) -> Option<LetStatement> {
+    fn parse_let_statement(&mut self) -> Option<Statement> {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Identifier(_)) {
@@ -98,10 +105,26 @@ impl Parser {
             return None;
         }
 
-        Some(LetStatement {
+        Some(Statement::LetStatement {
             token: Token::Let,
             value: Box::new(value),
             name,
+        })
+    }
+
+    fn parse_return_statement(&mut self) -> Option<Statement> {
+        self.advance_tokens();
+
+        if !matches!(self.current_token, Token::Int(_)) {
+            self.report_expected_token_error(Token::Int("number".to_string()));
+            return None;
+        }
+
+        let expression = self.parse_expression();
+
+        Some(Statement::ReturnStatement {
+            token: Token::Return,
+            value: Box::new(expression),
         })
     }
 
@@ -143,8 +166,6 @@ impl Expression for IntExpression {}
 
 impl Expression for Identifier {}
 
-impl Statement for LetStatement {}
-
 impl AstNode for IntExpression {
     fn get_token_literal(&self) -> String {
         match &self.token {
@@ -169,8 +190,8 @@ impl AstNode for Identifier {
     }
 }
 
-impl AstNode for LetStatement {
+impl AstNode for Statement{
     fn get_token_literal(&self) -> String {
-        self.value.get_token_literal()
+        todo!()
     }
 }
