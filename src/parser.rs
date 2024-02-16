@@ -30,6 +30,7 @@ where
 
 #[derive(Debug)]
 pub struct Parser {
+    pub errors: Vec<String>,
     lexer: Lexer,
     current_token: Token,
     next_token: Token,
@@ -44,6 +45,7 @@ impl Parser {
             lexer,
             current_token,
             next_token,
+            errors: Vec::new(),
         }
     }
 
@@ -55,8 +57,9 @@ impl Parser {
         while self.current_token != Token::Eof {
             match self.current_token {
                 Token::Let => {
-                    let statement = self.parse_let_statement();
-                    program.statements.push(statement);
+                    if let Some(statement) = self.parse_let_statement() {
+                        program.statements.push(statement);
+                    }
                 }
                 _ => {}
             }
@@ -67,11 +70,12 @@ impl Parser {
         program
     }
 
-    fn parse_let_statement(&mut self) -> LetStatement {
+    fn parse_let_statement(&mut self) -> Option<LetStatement> {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Identifier(_)) {
-            panic!("ERROR(parse_let_statement): token after let must be an identifer!");
+            self.report_expected_token_error(Token::Identifier("some identifier".to_string()));
+            return None;
         }
 
         let name = self.parse_identifier();
@@ -79,7 +83,8 @@ impl Parser {
         self.advance_tokens();
 
         if self.current_token != Token::Assign {
-            panic!("ERROR(parse_let_statement): token after let identifier must be =");
+            self.report_expected_token_error(Token::Assign);
+            return None;
         }
 
         self.advance_tokens();
@@ -89,14 +94,15 @@ impl Parser {
         self.advance_tokens();
 
         if self.current_token != Token::Semicolon {
-            panic!("ERROR(parse_let_statement): semicolon expected!");
+            self.report_expected_token_error(Token::Semicolon);
+            return None;
         }
 
-        LetStatement {
+        Some(LetStatement {
             token: Token::Let,
             value: Box::new(value),
             name,
-        }
+        })
     }
 
     fn parse_expression(&self) -> impl Expression {
@@ -123,6 +129,13 @@ impl Parser {
     fn advance_tokens(&mut self) {
         self.current_token = self.next_token.clone();
         self.next_token = self.lexer.next_token();
+    }
+
+    fn report_expected_token_error(&mut self, expected_token: Token) {
+        self.errors.push(format!(
+            "expected token to be '{:?}' got '{:?}'",
+            expected_token, self.current_token
+        ));
     }
 }
 

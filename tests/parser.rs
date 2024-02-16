@@ -16,6 +16,7 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
     let parsed_program = parser.parse_program();
 
     assert_eq!(parsed_program.statements.len(), 3);
+    assert_eq!(parser.errors.len(), 0);
     (0..parsed_program.statements.len()).for_each(|idx| {
         let identifier = parsed_program.statements[idx].name.get_token_literal();
         let value = parsed_program.statements[idx].value.get_token_literal();
