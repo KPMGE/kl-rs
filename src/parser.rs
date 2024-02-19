@@ -24,6 +24,20 @@ pub enum Statement {
         token: Token, // Token::Return
         value: Box<dyn Expression>,
     },
+    ExpressionStatement {
+        token: Token, // first expression token
+        value: Box<dyn Expression>,
+    },
+}
+
+enum Precedence {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
 }
 
 pub struct Program {
@@ -68,7 +82,11 @@ impl Parser {
                         program.statements.push(statement);
                     }
                 }
-                _ => {}
+                _ => {
+                    if let Some(statement) = self.parse_expression_statement() {
+                        program.statements.push(statement);
+                    }
+                }
             }
 
             self.advance_tokens();
@@ -85,7 +103,10 @@ impl Parser {
             return None;
         }
 
-        let name = self.parse_identifier();
+        let name = self
+            .parse_identifier()?
+            .downcast::<Identifier>()
+            .map_or(None, |identifier| Some(identifier))?;
 
         self.advance_tokens();
 
@@ -96,7 +117,7 @@ impl Parser {
 
         self.advance_tokens();
 
-        let value = self.parse_expression();
+        let value = self.parse_expression(Precedence::Lowest)?;
 
         self.advance_tokens();
 
@@ -107,8 +128,17 @@ impl Parser {
 
         Some(Statement::LetStatement {
             token: Token::Let,
-            value: Box::new(value),
-            name,
+            value,
+            name: *name,
+        })
+    }
+
+    fn parse_expression_statement(&mut self) -> Option<Statement> {
+        let expression = self.parse_expression(Precedence::Lowest)?;
+
+        Some(Statement::ExpressionStatement {
+            token: self.current_token.clone(),
+            value: expression,
         })
     }
 
@@ -120,33 +150,35 @@ impl Parser {
             return None;
         }
 
-        let expression = self.parse_expression();
+        let expression = self.parse_expression(Precedence::Lowest)?;
 
         Some(Statement::ReturnStatement {
             token: Token::Return,
-            value: Box::new(expression),
+            value: expression,
         })
     }
 
-    fn parse_expression(&self) -> impl Expression {
+    fn parse_expression(&mut self, _precedence: Precedence) -> Option<Box<dyn Expression>> {
+        if let Some(parse_fn) = self.get_parse_function(&self.current_token) {
+            return parse_fn(self);
+        }
+
         match &self.current_token {
-            Token::Int(num) => IntExpression {
+            Token::Int(num) => Some(Box::new(IntExpression {
                 token: Token::Int(num.to_string()),
-            },
-            _ => todo!(),
+            })),
+            _ => None,
         }
     }
 
-    fn parse_identifier(&self) -> Identifier {
-        match &self.current_token {
-            Token::Identifier(_) => Identifier {
+    fn parse_identifier(&self) -> Option<Box<dyn Expression>> {
+        if let Token::Identifier(_) = &self.current_token {
+            let identifier = Identifier {
                 token: self.current_token.clone(),
-            },
-            _ => panic!(
-                "ERROR(parse_identifier): expected identifier token, got {:?}",
-                self.current_token
-            ),
+            };
+            return Some(Box::new(identifier));
         }
+        None
     }
 
     fn advance_tokens(&mut self) {
@@ -159,6 +191,16 @@ impl Parser {
             "expected token to be '{:?}' got '{:?}'",
             expected_token, self.current_token
         ));
+    }
+
+    fn get_parse_function(
+        &self,
+        token: &Token,
+    ) -> Option<fn(&Parser) -> Option<Box<dyn Expression>>> {
+        match *token {
+            Token::Identifier(_) => Some(Parser::parse_identifier),
+            _ => None,
+        }
     }
 }
 
@@ -190,7 +232,7 @@ impl AstNode for Identifier {
     }
 }
 
-impl AstNode for Statement{
+impl AstNode for Statement {
     fn get_token_literal(&self) -> String {
         todo!()
     }
