@@ -1,8 +1,8 @@
 use kl_rs::{
     ast::AstNode,
-    token::Token,
     lexer::Lexer,
     parser::{Parser, Statement},
+    token::Token,
 };
 
 #[test]
@@ -87,7 +87,29 @@ fn given_a_variable_name_it_should_parse_correctly() {
         Statement::ExpressionStatement { token, value } => {
             assert_eq!(*token, Token::Identifier("foo".to_string()));
             assert_eq!(value.get_token_literal(), "foo");
-        },
-        _ => panic!("wrong statement!")
+        }
+        _ => panic!("wrong statement!"),
+    }
+}
+
+#[test]
+fn given_a_number_expression_it_should_parse_correctly() {
+    let code = "5;";
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parsed_program.statements.len(), 1);
+    assert_eq!(parser.errors.len(), 0);
+
+    let statement = parsed_program.statements.first().unwrap();
+    match statement {
+        Statement::ExpressionStatement { token, value } => {
+            assert_eq!(*token, Token::Int("5".to_string()));
+            assert_eq!(value.get_token_literal(), "5");
+        }
+        _ => panic!("wrong statement!"),
     }
 }

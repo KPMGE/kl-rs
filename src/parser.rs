@@ -159,16 +159,15 @@ impl Parser {
     }
 
     fn parse_expression(&mut self, _precedence: Precedence) -> Option<Box<dyn Expression>> {
-        if let Some(parse_fn) = self.get_parse_function(&self.current_token) {
-            return parse_fn(self);
-        }
+        let parse_fn = self.get_parse_function(&self.current_token)?;
+        parse_fn(self)
 
-        match &self.current_token {
-            Token::Int(num) => Some(Box::new(IntExpression {
-                token: Token::Int(num.to_string()),
-            })),
-            _ => None,
-        }
+        // match &self.current_token {
+        //     Token::Int(num) => Some(Box::new(IntExpression {
+        //         token: Token::Int(num.to_string()),
+        //     })),
+        //     _ => None,
+        // }
     }
 
     fn parse_identifier(&self) -> Option<Box<dyn Expression>> {
@@ -177,6 +176,16 @@ impl Parser {
                 token: self.current_token.clone(),
             };
             return Some(Box::new(identifier));
+        }
+        None
+    }
+
+    fn parse_int(&self) -> Option<Box<dyn Expression>> {
+        if let Token::Int(_) = &self.current_token {
+            let int_expression = IntExpression {
+                token: self.current_token.clone(),
+            };
+            return Some(Box::new(int_expression));
         }
         None
     }
@@ -199,6 +208,7 @@ impl Parser {
     ) -> Option<fn(&Parser) -> Option<Box<dyn Expression>>> {
         match *token {
             Token::Identifier(_) => Some(Parser::parse_identifier),
+            Token::Int(_) => Some(Parser::parse_int),
             _ => None,
         }
     }
