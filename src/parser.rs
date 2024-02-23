@@ -1,32 +1,28 @@
-use crate::{
-    ast::{AstNode, Expression},
-    lexer::Lexer,
-    token::Token,
-};
+use crate::{ast::AstNode, lexer::Lexer, token::Token};
 
 #[derive(Debug)]
-struct IntExpression {
-    token: Token, // Token::Int(val)
-}
-
-#[derive(Debug)]
-pub struct Identifier {
-    token: Token, // Token::Idetifier(name)
+pub enum Expression {
+    Int {
+        token: Token, // Token::Int(val)
+    },
+    Identifier {
+        token: Token, // Token::Idetifier(name)
+    },
 }
 
 pub enum Statement {
     LetStatement {
-        token: Token, // Token::Let
-        name: Identifier,
-        value: Box<dyn Expression>,
+        token: Token,     // Token::Let
+        name: Expression, // Expression::Identifer
+        value: Expression,
     },
     ReturnStatement {
         token: Token, // Token::Return
-        value: Box<dyn Expression>,
+        value: Expression,
     },
     ExpressionStatement {
         token: Token, // first expression token
-        value: Box<dyn Expression>,
+        value: Expression,
     },
 }
 
@@ -103,10 +99,7 @@ impl Parser {
             return None;
         }
 
-        let name = self
-            .parse_identifier()?
-            .downcast::<Identifier>()
-            .map_or(None, |identifier| Some(identifier))?;
+        let name = self.parse_identifier()?;
 
         self.advance_tokens();
 
@@ -128,8 +121,8 @@ impl Parser {
 
         Some(Statement::LetStatement {
             token: Token::Let,
+            name,
             value,
-            name: *name,
         })
     }
 
@@ -158,34 +151,27 @@ impl Parser {
         })
     }
 
-    fn parse_expression(&mut self, _precedence: Precedence) -> Option<Box<dyn Expression>> {
-        let parse_fn = self.get_parse_function(&self.current_token)?;
+    fn parse_expression(&mut self, _precedence: Precedence) -> Option<Expression> {
+        let parse_fn = self.get_prefix_parse_function(&self.current_token)?;
         parse_fn(self)
-
-        // match &self.current_token {
-        //     Token::Int(num) => Some(Box::new(IntExpression {
-        //         token: Token::Int(num.to_string()),
-        //     })),
-        //     _ => None,
-        // }
     }
 
-    fn parse_identifier(&self) -> Option<Box<dyn Expression>> {
+    fn parse_identifier(&self) -> Option<Expression> {
         if let Token::Identifier(_) = &self.current_token {
-            let identifier = Identifier {
+            let identifier = Expression::Identifier {
                 token: self.current_token.clone(),
             };
-            return Some(Box::new(identifier));
+            return Some(identifier);
         }
         None
     }
 
-    fn parse_int(&self) -> Option<Box<dyn Expression>> {
+    fn parse_int(&self) -> Option<Expression> {
         if let Token::Int(_) = &self.current_token {
-            let int_expression = IntExpression {
+            let int_expression = Expression::Int {
                 token: self.current_token.clone(),
             };
-            return Some(Box::new(int_expression));
+            return Some(int_expression);
         }
         None
     }
@@ -202,10 +188,10 @@ impl Parser {
         ));
     }
 
-    fn get_parse_function(
+    fn get_prefix_parse_function(
         &self,
         token: &Token,
-    ) -> Option<fn(&Parser) -> Option<Box<dyn Expression>>> {
+    ) -> Option<fn(&Parser) -> Option<Expression>> {
         match *token {
             Token::Identifier(_) => Some(Parser::parse_identifier),
             Token::Int(_) => Some(Parser::parse_int),
@@ -214,30 +200,17 @@ impl Parser {
     }
 }
 
-impl Expression for IntExpression {}
-
-impl Expression for Identifier {}
-
-impl AstNode for IntExpression {
+impl AstNode for Expression {
     fn get_token_literal(&self) -> String {
-        match &self.token {
-            Token::Int(num) => num.to_string(),
-            _ => panic!(
-                "ERROR(get_token_literal): expected token type Int, found {:?}",
-                self.token
-            ),
-        }
-    }
-}
-
-impl AstNode for Identifier {
-    fn get_token_literal(&self) -> String {
-        match &self.token {
-            Token::Identifier(name) => name.to_string(),
-            _ => panic!(
-                "ERROR(get_token_literal): expected token type Identifier, found {:?}",
-                self.token
-            ),
+        match self {
+            Expression::Int { token } => match &token {
+                Token::Int(num) => num.to_string(),
+                _ => todo!(),
+            },
+            Expression::Identifier { token } => match &token {
+                Token::Identifier(name) => name.to_string(),
+                _ => todo!(),
+            },
         }
     }
 }
