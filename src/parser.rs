@@ -8,6 +8,10 @@ pub enum Expression {
     Identifier {
         token: Token, // Token::Idetifier(name)
     },
+    Prefix {
+        operator: Token, // Token::Bang, Token::Minus
+        right: Box<Expression>,
+    },
 }
 
 pub enum Statement {
@@ -127,10 +131,11 @@ impl Parser {
     }
 
     fn parse_expression_statement(&mut self) -> Option<Statement> {
+        let token = self.current_token.clone();
         let expression = self.parse_expression(Precedence::Lowest)?;
 
         Some(Statement::ExpressionStatement {
-            token: self.current_token.clone(),
+            token,
             value: expression,
         })
     }
@@ -152,11 +157,11 @@ impl Parser {
     }
 
     fn parse_expression(&mut self, _precedence: Precedence) -> Option<Expression> {
-        let parse_fn = self.get_prefix_parse_function(&self.current_token)?;
-        parse_fn(self)
+        let prefix_parse_fn = self.get_prefix_parse_function(&self.current_token)?;
+        prefix_parse_fn(self)
     }
 
-    fn parse_identifier(&self) -> Option<Expression> {
+    fn parse_identifier(&mut self) -> Option<Expression> {
         if let Token::Identifier(_) = &self.current_token {
             let identifier = Expression::Identifier {
                 token: self.current_token.clone(),
@@ -166,7 +171,7 @@ impl Parser {
         None
     }
 
-    fn parse_int(&self) -> Option<Expression> {
+    fn parse_int(&mut self) -> Option<Expression> {
         if let Token::Int(_) = &self.current_token {
             let int_expression = Expression::Int {
                 token: self.current_token.clone(),
@@ -174,6 +179,17 @@ impl Parser {
             return Some(int_expression);
         }
         None
+    }
+
+    fn parse_prefix_expression(&mut self) -> Option<Expression> {
+        let operator = self.current_token.clone();
+
+        self.advance_tokens();
+
+        Some(Expression::Prefix {
+            operator,
+            right: Box::new(self.parse_expression(Precedence::Prefix)?),
+        })
     }
 
     fn advance_tokens(&mut self) {
@@ -191,10 +207,12 @@ impl Parser {
     fn get_prefix_parse_function(
         &self,
         token: &Token,
-    ) -> Option<fn(&Parser) -> Option<Expression>> {
+    ) -> Option<fn(&mut Parser) -> Option<Expression>> {
         match *token {
             Token::Identifier(_) => Some(Parser::parse_identifier),
             Token::Int(_) => Some(Parser::parse_int),
+            Token::Bang => Some(Parser::parse_prefix_expression),
+            Token::Minus => Some(Parser::parse_prefix_expression),
             _ => None,
         }
     }
@@ -211,6 +229,7 @@ impl AstNode for Expression {
                 Token::Identifier(name) => name.to_string(),
                 _ => todo!(),
             },
+            Expression::Prefix { right, .. } => right.get_token_literal(),
         }
     }
 }

@@ -1,7 +1,7 @@
 use kl_rs::{
     ast::AstNode,
     lexer::Lexer,
-    parser::{Parser, Statement},
+    parser::{Parser, Statement, Expression},
     token::Token,
 };
 
@@ -112,4 +112,42 @@ fn given_a_number_expression_it_should_parse_correctly() {
         }
         _ => panic!("wrong statement!"),
     }
+}
+
+#[test]
+fn given_a_prefix_expression_it_should_parse_correctly() {
+    let code = "
+        -5;\
+        !20;
+    ";
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+
+    let expected_operators = [Token::Minus, Token::Bang];
+    let expected_values = ["5", "20"];
+
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parsed_program.statements.len(), 2);
+    assert_eq!(parser.errors.len(), 0);
+
+    parsed_program.statements
+        .iter()
+        .enumerate()
+        .for_each(|(idx, statement)| {
+            match statement {
+                Statement::ExpressionStatement { token, value } => {
+                    assert_eq!(*token, expected_operators[idx]);
+                    match value {
+                        Expression::Prefix { operator, right } => {
+                            assert_eq!(*operator, expected_operators[idx]);
+                            assert_eq!(right.get_token_literal(), expected_values[idx]);
+                        }
+                        _ => panic!()
+                    }
+                }
+                _ => panic!()
+            }
+        })
 }
