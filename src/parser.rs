@@ -1,35 +1,41 @@
-use crate::{
-    ast::{AstNode, Expression},
-    lexer::Lexer,
-    token::Token,
-};
+use crate::{ast::AstNode, lexer::Lexer, token::Token};
 
-#[derive(Debug)]
-struct IntExpression {
-    token: Token, // Token::Int(val)
-}
-
-#[derive(Debug)]
-pub struct Identifier {
-    token: Token, // Token::Idetifier(name)
+#[derive(Debug, Eq, PartialEq)]
+pub enum Expression {
+    Int {
+        token: Token, // Token::Int(val)
+    },
+    Identifier {
+        token: Token, // Token::Idetifier(name)
+    },
+    Prefix {
+        operator: Token, // Token::Bang, Token::Minus
+        right: Box<Expression>,
+    },
+    Infix {
+        operator: Token, // Token::Plus, Token::Minus, Token::Equals etc.
+        left: Box<Expression>,
+        right: Box<Expression>,
+    },
 }
 
 pub enum Statement {
     LetStatement {
-        token: Token, // Token::Let
-        name: Identifier,
-        value: Box<dyn Expression>,
+        token: Token,     // Token::Let
+        name: Expression, // Expression::Identifer
+        value: Expression,
     },
     ReturnStatement {
         token: Token, // Token::Return
-        value: Box<dyn Expression>,
+        value: Expression,
     },
     ExpressionStatement {
         token: Token, // first expression token
-        value: Box<dyn Expression>,
+        value: Expression,
     },
 }
 
+#[derive(Debug, PartialEq, PartialOrd)]
 enum Precedence {
     Lowest,
     Equals,
@@ -103,10 +109,7 @@ impl Parser {
             return None;
         }
 
-        let name = self
-            .parse_identifier()?
-            .downcast::<Identifier>()
-            .map_or(None, |identifier| Some(identifier))?;
+        let name = self.parse_identifier()?;
 
         self.advance_tokens();
 
@@ -128,16 +131,17 @@ impl Parser {
 
         Some(Statement::LetStatement {
             token: Token::Let,
+            name,
             value,
-            name: *name,
         })
     }
 
     fn parse_expression_statement(&mut self) -> Option<Statement> {
+        let token = self.current_token.clone();
         let expression = self.parse_expression(Precedence::Lowest)?;
 
         Some(Statement::ExpressionStatement {
-            token: self.current_token.clone(),
+            token,
             value: expression,
         })
     }
@@ -158,27 +162,67 @@ impl Parser {
         })
     }
 
-    fn parse_expression(&mut self, _precedence: Precedence) -> Option<Box<dyn Expression>> {
-        if let Some(parse_fn) = self.get_parse_function(&self.current_token) {
-            return parse_fn(self);
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
+        let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
+        let left_expression = prefix_parse_fn(self);
+
+        let is_semicolon = self.current_token == Token::Semicolon;
+        let is_next_token_precedence_higher = precedence < self.next_token.precedence();
+
+        while !is_semicolon && is_next_token_precedence_higher {
+            if let Some(infix_parse_fn) = self.next_token.get_infix_parse_fn() {
+                self.advance_tokens();
+                return infix_parse_fn(self, left_expression?);
+            }
         }
 
-        match &self.current_token {
-            Token::Int(num) => Some(Box::new(IntExpression {
-                token: Token::Int(num.to_string()),
-            })),
-            _ => None,
-        }
+        left_expression
     }
 
-    fn parse_identifier(&self) -> Option<Box<dyn Expression>> {
+    fn parse_identifier(&mut self) -> Option<Expression> {
         if let Token::Identifier(_) = &self.current_token {
-            let identifier = Identifier {
+            let identifier = Expression::Identifier {
                 token: self.current_token.clone(),
             };
-            return Some(Box::new(identifier));
+            return Some(identifier);
         }
         None
+    }
+
+    fn parse_int(&mut self) -> Option<Expression> {
+        if let Token::Int(_) = &self.current_token {
+            let int_expression = Expression::Int {
+                token: self.current_token.clone(),
+            };
+            return Some(int_expression);
+        }
+        None
+    }
+
+    fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
+        let operator = self.current_token.clone();
+        let precedence = self.current_token.precedence();
+
+        self.advance_tokens();
+
+        let right_expression = self.parse_expression(precedence)?;
+
+        Some(Expression::Infix {
+            operator,
+            left: Box::new(left_expression),
+            right: Box::new(right_expression),
+        })
+    }
+
+    fn parse_prefix_expression(&mut self) -> Option<Expression> {
+        let operator = self.current_token.clone();
+
+        self.advance_tokens();
+
+        Some(Expression::Prefix {
+            operator,
+            right: Box::new(self.parse_expression(Precedence::Prefix)?),
+        })
     }
 
     fn advance_tokens(&mut self) {
@@ -192,42 +236,21 @@ impl Parser {
             expected_token, self.current_token
         ));
     }
-
-    fn get_parse_function(
-        &self,
-        token: &Token,
-    ) -> Option<fn(&Parser) -> Option<Box<dyn Expression>>> {
-        match *token {
-            Token::Identifier(_) => Some(Parser::parse_identifier),
-            _ => None,
-        }
-    }
 }
 
-impl Expression for IntExpression {}
-
-impl Expression for Identifier {}
-
-impl AstNode for IntExpression {
+impl AstNode for Expression {
     fn get_token_literal(&self) -> String {
-        match &self.token {
-            Token::Int(num) => num.to_string(),
-            _ => panic!(
-                "ERROR(get_token_literal): expected token type Int, found {:?}",
-                self.token
-            ),
-        }
-    }
-}
-
-impl AstNode for Identifier {
-    fn get_token_literal(&self) -> String {
-        match &self.token {
-            Token::Identifier(name) => name.to_string(),
-            _ => panic!(
-                "ERROR(get_token_literal): expected token type Identifier, found {:?}",
-                self.token
-            ),
+        match self {
+            Expression::Int { token } => match &token {
+                Token::Int(num) => num.to_string(),
+                _ => todo!(),
+            },
+            Expression::Identifier { token } => match &token {
+                Token::Identifier(name) => name.to_string(),
+                _ => todo!(),
+            },
+            Expression::Prefix { right, .. } => right.get_token_literal(),
+            Expression::Infix { .. } => "".to_string(),
         }
     }
 }
@@ -235,5 +258,41 @@ impl AstNode for Identifier {
 impl AstNode for Statement {
     fn get_token_literal(&self) -> String {
         todo!()
+    }
+}
+
+impl Token {
+    fn precedence(&self) -> Precedence {
+        match self {
+            Token::Equals | Token::NotEquals => Precedence::Equals,
+            Token::Plus | Token::Minus => Precedence::Sum,
+            Token::Asterisk | Token::Slash => Precedence::Product,
+            Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
+            _ => Precedence::Lowest,
+        }
+    }
+
+    fn prefix_parse_fn(&self) -> Option<fn(&mut Parser) -> Option<Expression>> {
+        match self {
+            Token::Identifier(_) => Some(Parser::parse_identifier),
+            Token::Int(_) => Some(Parser::parse_int),
+            Token::Bang => Some(Parser::parse_prefix_expression),
+            Token::Minus => Some(Parser::parse_prefix_expression),
+            _ => None,
+        }
+    }
+
+    fn get_infix_parse_fn(&self) -> Option<fn(&mut Parser, Expression) -> Option<Expression>> {
+        match self {
+            Token::Plus => Some(Parser::parse_infix_expression),
+            Token::Minus => Some(Parser::parse_infix_expression),
+            Token::Slash => Some(Parser::parse_infix_expression),
+            Token::Asterisk => Some(Parser::parse_infix_expression),
+            Token::GreaterThan => Some(Parser::parse_infix_expression),
+            Token::LessThan => Some(Parser::parse_infix_expression),
+            Token::Equals => Some(Parser::parse_infix_expression),
+            Token::NotEquals => Some(Parser::parse_infix_expression),
+            _ => None,
+        }
     }
 }
