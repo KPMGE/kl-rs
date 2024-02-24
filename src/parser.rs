@@ -19,6 +19,7 @@ pub enum Expression {
     },
 }
 
+#[derive(Debug, PartialEq)]
 pub enum Statement {
     LetStatement {
         token: Token,     // Token::Let

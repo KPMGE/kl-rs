@@ -27,15 +27,21 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
         .statements
         .iter()
         .enumerate()
-        .for_each(|(idx, statement)| match statement {
-            Statement::LetStatement { value, name, .. } => {
-                let expected_identifier = expected_identifiers[idx];
-                let expected_int = expected_ints[idx];
+        .for_each(|(idx, statement)| {
+            let expected_identifier = expected_identifiers.get(idx).unwrap();
+            let expected_int = expected_ints.get(idx).unwrap();
 
-                assert_eq!(expected_identifier, name.get_token_literal());
-                assert_eq!(expected_int, value.get_token_literal());
-            }
-            _ => panic!("wrong statement!"),
+            let expected_statement = Statement::LetStatement {
+                token: Token::Let,
+                name: Expression::Identifier {
+                    token: Token::Identifier(expected_identifier.to_string()),
+                },
+                value: Expression::Int {
+                    token: Token::Int(expected_int.to_string()),
+                },
+            };
+
+            assert_eq!(*statement, expected_statement);
         })
 }
 
@@ -60,13 +66,18 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
         .statements
         .iter()
         .enumerate()
-        .for_each(|(idx, statement)| match statement {
-            Statement::ReturnStatement { value, .. } => {
-                let expected_int = expected_ints[idx];
+        .for_each(|(idx, statement)| {
+            let expected_int = expected_ints.get(idx).unwrap();
+            let expected_expression = Expression::Int {
+                token: Token::Int(expected_int.to_string()),
+            };
 
-                assert_eq!(expected_int, value.get_token_literal());
-            }
-            _ => panic!("wrong statement!"),
+            let expected_statement = Statement::ReturnStatement {
+                token: Token::Return,
+                value: expected_expression,
+            };
+
+            assert_eq!(*statement, expected_statement);
         })
 }
 
@@ -154,14 +165,7 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
 #[test]
 fn given_infix_expressions_it_should_parse_correctly() {
     let infix_statements = vec![
-        "5 + 6;",
-        "10 - 5;",
-        "2 < 3;",
-        "2 > 3;",
-        "4 * 5;",
-        "5 / 7;",
-        "8 == 9;",
-        "4 != 2;",
+        "5 + 6;", "10 - 5;", "2 < 3;", "2 > 3;", "4 * 5;", "5 / 7;", "8 == 9;", "4 != 2;",
     ];
 
     let expected_operators = vec![
@@ -214,20 +218,20 @@ fn assert_infix_expression(code: &str, expected_operator: Token, expected_litera
             let expected_left_value = expected_literals.0;
             let expected_right_value = expected_literals.1;
             let expected_left_exp = Expression::Int {
-                token: Token::Int(expected_left_value.to_string())
+                token: Token::Int(expected_left_value.to_string()),
             };
             let expected_right_exp = Expression::Int {
-                token: Token::Int(expected_right_value.to_string())
+                token: Token::Int(expected_right_value.to_string()),
             };
 
-            let expected_expression = Expression::Infix { 
-                operator: expected_operator, 
+            let expected_expression = Expression::Infix {
+                operator: expected_operator,
                 left: Box::new(expected_left_exp),
-                right: Box::new(expected_right_exp), 
+                right: Box::new(expected_right_exp),
             };
 
             assert_eq!(*value, expected_expression);
-        },
+        }
         _ => panic!(),
     }
 }
