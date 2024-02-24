@@ -46,7 +46,6 @@ enum Precedence {
     Call,
 }
 
-
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -164,14 +163,14 @@ impl Parser {
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
-        let prefix_parse_fn = self.get_prefix_parse_fn(&self.current_token)?;
+        let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
         let left_expression = prefix_parse_fn(self);
 
         let is_semicolon = self.current_token == Token::Semicolon;
         let is_next_token_precedence_higher = precedence < self.next_token.precedence();
 
         while !is_semicolon && is_next_token_precedence_higher {
-            if let Some(infix_parse_fn) = self.get_infix_parse_fn(&self.next_token) {
+            if let Some(infix_parse_fn) = self.next_token.get_infix_parse_fn() {
                 self.advance_tokens();
                 return infix_parse_fn(self, left_expression?);
             }
@@ -237,33 +236,6 @@ impl Parser {
             expected_token, self.current_token
         ));
     }
-
-    fn get_infix_parse_fn(
-        &self,
-        token: &Token,
-    ) -> Option<fn(&mut Parser, Expression) -> Option<Expression>> {
-        match *token {
-            Token::Plus => Some(Parser::parse_infix_expression),
-            Token::Minus => Some(Parser::parse_infix_expression),
-            Token::Slash => Some(Parser::parse_infix_expression),
-            Token::Asterisk => Some(Parser::parse_infix_expression),
-            Token::GreaterThan => Some(Parser::parse_infix_expression),
-            Token::LessThan => Some(Parser::parse_infix_expression),
-            Token::Equals => Some(Parser::parse_infix_expression),
-            Token::NotEquals => Some(Parser::parse_infix_expression),
-            _ => None,
-        }
-    }
-
-    fn get_prefix_parse_fn(&self, token: &Token) -> Option<fn(&mut Parser) -> Option<Expression>> {
-        match *token {
-            Token::Identifier(_) => Some(Parser::parse_identifier),
-            Token::Int(_) => Some(Parser::parse_int),
-            Token::Bang => Some(Parser::parse_prefix_expression),
-            Token::Minus => Some(Parser::parse_prefix_expression),
-            _ => None,
-        }
-    }
 }
 
 impl AstNode for Expression {
@@ -297,6 +269,30 @@ impl Token {
             Token::Asterisk | Token::Slash => Precedence::Product,
             Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
             _ => Precedence::Lowest,
+        }
+    }
+
+    fn prefix_parse_fn(&self) -> Option<fn(&mut Parser) -> Option<Expression>> {
+        match self {
+            Token::Identifier(_) => Some(Parser::parse_identifier),
+            Token::Int(_) => Some(Parser::parse_int),
+            Token::Bang => Some(Parser::parse_prefix_expression),
+            Token::Minus => Some(Parser::parse_prefix_expression),
+            _ => None,
+        }
+    }
+
+    fn get_infix_parse_fn(&self) -> Option<fn(&mut Parser, Expression) -> Option<Expression>> {
+        match self {
+            Token::Plus => Some(Parser::parse_infix_expression),
+            Token::Minus => Some(Parser::parse_infix_expression),
+            Token::Slash => Some(Parser::parse_infix_expression),
+            Token::Asterisk => Some(Parser::parse_infix_expression),
+            Token::GreaterThan => Some(Parser::parse_infix_expression),
+            Token::LessThan => Some(Parser::parse_infix_expression),
+            Token::Equals => Some(Parser::parse_infix_expression),
+            Token::NotEquals => Some(Parser::parse_infix_expression),
+            _ => None,
         }
     }
 }
