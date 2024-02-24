@@ -35,6 +35,7 @@ pub enum Statement {
     },
 }
 
+#[derive(Debug, PartialEq, PartialOrd)]
 enum Precedence {
     Lowest,
     Equals,
@@ -161,13 +162,18 @@ impl Parser {
         })
     }
 
-    fn parse_expression(&mut self, _precedence: Precedence) -> Option<Expression> {
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
         let prefix_parse_fn = self.get_prefix_parse_fn(&self.current_token)?;
         let left_expression = prefix_parse_fn(self);
 
-        if let Some(infix_parse_fn) = self.get_infix_parse_fn(&self.next_token) {
-            self.advance_tokens();
-            return infix_parse_fn(self, left_expression?);
+        let is_semicolon = self.current_token == Token::Semicolon;
+        let is_next_token_precedence_higher = precedence < self.get_token_precedence(&self.next_token);
+
+        while !is_semicolon && is_next_token_precedence_higher {
+            if let Some(infix_parse_fn) = self.get_infix_parse_fn(&self.next_token) {
+                self.advance_tokens();
+                return infix_parse_fn(self, left_expression?);
+            }
         }
 
         left_expression
@@ -195,10 +201,10 @@ impl Parser {
 
     fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
         let operator = self.current_token.clone();
+        let precedence = self.get_token_precedence(&self.current_token);
 
         self.advance_tokens();
 
-        let precedence = self.get_token_precedence(&self.current_token);
         let right_expression = self.parse_expression(precedence)?;
 
         Some(Expression::Infix {
@@ -210,7 +216,7 @@ impl Parser {
 
     fn get_token_precedence(&self, token: &Token) -> Precedence {
         match token {
-            Token::Equals => Precedence::Equals,
+            Token::Equals | Token::NotEquals => Precedence::Equals,
             Token::Plus | Token::Minus => Precedence::Sum,
             Token::Asterisk | Token::Slash => Precedence::Product,
             Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
