@@ -1,6 +1,6 @@
 use crate::{ast::AstNode, lexer::Lexer, token::Token};
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Expression {
     Int {
         token: Token, // Token::Int(val)
@@ -10,6 +10,11 @@ pub enum Expression {
     },
     Prefix {
         operator: Token, // Token::Bang, Token::Minus
+        right: Box<Expression>,
+    },
+    Infix {
+        operator: Token, // Token::Plus, Token::Minus, Token::Equals etc.
+        left: Box<Expression>,
         right: Box<Expression>,
     },
 }
@@ -157,8 +162,15 @@ impl Parser {
     }
 
     fn parse_expression(&mut self, _precedence: Precedence) -> Option<Expression> {
-        let prefix_parse_fn = self.get_prefix_parse_function(&self.current_token)?;
-        prefix_parse_fn(self)
+        let prefix_parse_fn = self.get_prefix_parse_fn(&self.current_token)?;
+        let left_expression = prefix_parse_fn(self);
+
+        if let Some(infix_parse_fn) = self.get_infix_parse_fn(&self.next_token) {
+            self.advance_tokens();
+            return infix_parse_fn(self, left_expression?);
+        }
+
+        left_expression
     }
 
     fn parse_identifier(&mut self) -> Option<Expression> {
@@ -179,6 +191,31 @@ impl Parser {
             return Some(int_expression);
         }
         None
+    }
+
+    fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
+        let operator = self.current_token.clone();
+
+        self.advance_tokens();
+
+        let precedence = self.get_token_precedence(&self.current_token);
+        let right_expression = self.parse_expression(precedence)?;
+
+        Some(Expression::Infix {
+            operator,
+            left: Box::new(left_expression),
+            right: Box::new(right_expression),
+        })
+    }
+
+    fn get_token_precedence(&self, token: &Token) -> Precedence {
+        match token {
+            Token::Equals => Precedence::Equals,
+            Token::Plus | Token::Minus => Precedence::Sum,
+            Token::Asterisk | Token::Slash => Precedence::Product,
+            Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
+            _ => Precedence::Lowest,
+        }
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
@@ -204,10 +241,24 @@ impl Parser {
         ));
     }
 
-    fn get_prefix_parse_function(
+    fn get_infix_parse_fn(
         &self,
         token: &Token,
-    ) -> Option<fn(&mut Parser) -> Option<Expression>> {
+    ) -> Option<fn(&mut Parser, Expression) -> Option<Expression>> {
+        match *token {
+            Token::Plus => Some(Parser::parse_infix_expression),
+            Token::Minus => Some(Parser::parse_infix_expression),
+            Token::Slash => Some(Parser::parse_infix_expression),
+            Token::Asterisk => Some(Parser::parse_infix_expression),
+            Token::GreaterThan => Some(Parser::parse_infix_expression),
+            Token::LessThan => Some(Parser::parse_infix_expression),
+            Token::Equals => Some(Parser::parse_infix_expression),
+            Token::NotEquals => Some(Parser::parse_infix_expression),
+            _ => None,
+        }
+    }
+
+    fn get_prefix_parse_fn(&self, token: &Token) -> Option<fn(&mut Parser) -> Option<Expression>> {
         match *token {
             Token::Identifier(_) => Some(Parser::parse_identifier),
             Token::Int(_) => Some(Parser::parse_int),
@@ -230,6 +281,7 @@ impl AstNode for Expression {
                 _ => todo!(),
             },
             Expression::Prefix { right, .. } => right.get_token_literal(),
+            Expression::Infix { .. } => "".to_string(),
         }
     }
 }
