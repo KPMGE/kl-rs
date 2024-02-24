@@ -46,6 +46,7 @@ enum Precedence {
     Call,
 }
 
+
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -167,7 +168,7 @@ impl Parser {
         let left_expression = prefix_parse_fn(self);
 
         let is_semicolon = self.current_token == Token::Semicolon;
-        let is_next_token_precedence_higher = precedence < self.get_token_precedence(&self.next_token);
+        let is_next_token_precedence_higher = precedence < self.next_token.precedence();
 
         while !is_semicolon && is_next_token_precedence_higher {
             if let Some(infix_parse_fn) = self.get_infix_parse_fn(&self.next_token) {
@@ -201,7 +202,7 @@ impl Parser {
 
     fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
         let operator = self.current_token.clone();
-        let precedence = self.get_token_precedence(&self.current_token);
+        let precedence = self.current_token.precedence();
 
         self.advance_tokens();
 
@@ -212,16 +213,6 @@ impl Parser {
             left: Box::new(left_expression),
             right: Box::new(right_expression),
         })
-    }
-
-    fn get_token_precedence(&self, token: &Token) -> Precedence {
-        match token {
-            Token::Equals | Token::NotEquals => Precedence::Equals,
-            Token::Plus | Token::Minus => Precedence::Sum,
-            Token::Asterisk | Token::Slash => Precedence::Product,
-            Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
-            _ => Precedence::Lowest,
-        }
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
@@ -295,5 +286,17 @@ impl AstNode for Expression {
 impl AstNode for Statement {
     fn get_token_literal(&self) -> String {
         todo!()
+    }
+}
+
+impl Token {
+    fn precedence(&self) -> Precedence {
+        match self {
+            Token::Equals | Token::NotEquals => Precedence::Equals,
+            Token::Plus | Token::Minus => Precedence::Sum,
+            Token::Asterisk | Token::Slash => Precedence::Product,
+            Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
+            _ => Precedence::Lowest,
+        }
     }
 }
