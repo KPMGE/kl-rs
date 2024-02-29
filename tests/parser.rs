@@ -229,6 +229,37 @@ fn given_boolean_expression_it_should_parse_correctly() {
     });
 }
 
+#[test]
+fn given_a_grouped_expression_it_should_parse_correctly() {
+    let test_cases = vec![
+        ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+        ("-(5 + 5)", "(-(5 + 5))")
+    ];
+
+    test_cases
+        .iter()
+        .for_each(|(case, expected)| {
+
+            let lexer = Lexer::new(case.to_string());
+            let mut parser = Parser::new(lexer);
+
+            let parsed_program = parser.parse_program();
+
+            assert_eq!(parser.errors.len(), 0);
+
+
+            let lexer = Lexer::new(expected.to_string());
+            let mut parser = Parser::new(lexer);
+
+            let expected_parsed_program = parser.parse_program();
+
+            assert_eq!(parser.errors.len(), 0);
+
+            assert_eq!(parsed_program, expected_parsed_program);
+        });
+}
+
+
 fn assert_boolean_expression(code: &str, expected_token: Token, expected_expression: &Expression) {
     let lexer = Lexer::new(code.to_string());
     let mut parser = Parser::new(lexer);

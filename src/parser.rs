@@ -238,6 +238,18 @@ impl Parser {
         })
     }
 
+    fn parse_grouped_expression(&mut self) -> Option<Expression> {
+        self.advance_tokens();
+
+        let expression = self.parse_expression(Precedence::Lowest);
+
+        if !self.expect_next_token(Token::RightParentesis) {
+            return None
+        }
+
+        expression
+    }
+
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
         let operator = self.current_token.clone();
 
@@ -306,6 +318,7 @@ impl Token {
             Token::Identifier(_) => Some(Parser::parse_identifier),
             Token::Int(_) => Some(Parser::parse_int),
             Token::Bang => Some(Parser::parse_prefix_expression),
+            Token::LeftParentesis => Some(Parser::parse_grouped_expression),
             Token::Minus => Some(Parser::parse_prefix_expression),
             Token::True | Token::False => Some(Parser::parse_boolean_expression),
             _ => None,
