@@ -135,8 +135,8 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
     let lexer = Lexer::new(code.to_string());
     let mut parser = Parser::new(lexer);
 
-    let expected_operators = [Token::Minus, Token::Bang];
-    let expected_values = ["5", "20"];
+    let expected_operators = vec![Token::Minus, Token::Bang];
+    let expected_values = vec!["5", "20"];
 
     let parsed_program = parser.parse_program();
 
@@ -149,11 +149,16 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
         .enumerate()
         .for_each(|(idx, statement)| match statement {
             Statement::ExpressionStatement { token, value } => {
-                assert_eq!(*token, expected_operators[idx]);
+                let expected_operator = expected_operators.get(idx).unwrap();
+                let expected_right_expression = Expression::Int {
+                    token: Token::Int(expected_values.get(idx).unwrap().to_string()),
+                };
+
+                assert_eq!(token, expected_operators.get(idx).unwrap());
                 match value {
                     Expression::Prefix { operator, right } => {
-                        assert_eq!(*operator, expected_operators[idx]);
-                        assert_eq!(right.get_token_literal(), expected_values[idx]);
+                        assert_eq!(operator, expected_operator);
+                        assert_eq!(*right, Box::new(expected_right_expression));
                     }
                     _ => panic!(),
                 }
@@ -200,6 +205,48 @@ fn given_infix_expressions_it_should_parse_correctly() {
                 *expected_literals.get(idx).unwrap(),
             );
         });
+}
+
+#[test]
+fn given_boolean_expression_it_should_parse_correctly() {
+    let test_cases = vec!["true;", "false;", "!true;"];
+    let expected_tokens = vec![Token::True, Token::False, Token::Bang];
+    let expected_expressions = vec![
+        Expression::Boolean { token: Token::True },
+        Expression::Boolean {
+            token: Token::False,
+        },
+        Expression::Prefix {
+            operator: Token::Bang,
+            right: Box::new(Expression::Boolean { token: Token::True }),
+        },
+    ];
+
+    test_cases.iter().enumerate().for_each(|(idx, case)| {
+        let token = expected_tokens.get(idx).unwrap().clone();
+        let expression = expected_expressions.get(idx).unwrap();
+        assert_boolean_expression(case, token, expression);
+    });
+}
+
+fn assert_boolean_expression(code: &str, expected_token: Token, expected_expression: &Expression) {
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parsed_program.statements.len(), 1);
+    assert_eq!(parser.errors.len(), 0);
+
+    let statement = parsed_program.statements.first().unwrap();
+
+    match statement {
+        Statement::ExpressionStatement { token, value } => {
+            assert_eq!(*token, expected_token);
+            assert_eq!(value, expected_expression);
+        }
+        _ => panic!(),
+    }
 }
 
 fn assert_infix_expression(code: &str, expected_operator: Token, expected_literals: (&str, &str)) {

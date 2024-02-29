@@ -17,6 +17,9 @@ pub enum Expression {
         left: Box<Expression>,
         right: Box<Expression>,
     },
+    Boolean {
+        token: Token // Token::True or Token::False
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -47,6 +50,7 @@ enum Precedence {
     Call,
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Program {
     pub statements: Vec<Statement>,
 }
@@ -141,6 +145,10 @@ impl Parser {
         let token = self.current_token.clone();
         let expression = self.parse_expression(Precedence::Lowest)?;
 
+        if self.current_token == Token::Semicolon {
+            self.advance_tokens();
+        }
+
         Some(Statement::ExpressionStatement {
             token,
             value: expression,
@@ -165,19 +173,34 @@ impl Parser {
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
         let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
-        let left_expression = prefix_parse_fn(self);
+        let left_expression = prefix_parse_fn(self)?;
 
-        let is_semicolon = self.current_token == Token::Semicolon;
         let is_next_token_precedence_higher = precedence < self.next_token.precedence();
 
-        while !is_semicolon && is_next_token_precedence_higher {
+        while !self.expect_current_token(Token::Semicolon) && is_next_token_precedence_higher {
             if let Some(infix_parse_fn) = self.next_token.get_infix_parse_fn() {
                 self.advance_tokens();
-                return infix_parse_fn(self, left_expression?);
+                return infix_parse_fn(self, left_expression);
             }
         }
 
-        left_expression
+        Some(left_expression)
+    }
+
+    fn expect_current_token(&mut self, token: Token) -> bool {
+        if self.current_token == token {
+            self.advance_tokens();
+            true;
+        }
+        false
+    }
+
+    fn expect_next_token(&mut self, token: Token) -> bool {
+        if self.next_token == token {
+            self.advance_tokens();
+            true;
+        }
+        false
     }
 
     fn parse_identifier(&mut self) -> Option<Expression> {
@@ -226,6 +249,10 @@ impl Parser {
         })
     }
 
+    fn parse_boolean_expression(&mut self) -> Option<Expression> {
+        Some(Expression::Boolean { token: self.current_token.clone() })
+    }
+
     fn advance_tokens(&mut self) {
         self.current_token = self.next_token.clone();
         self.next_token = self.lexer.next_token();
@@ -252,6 +279,7 @@ impl AstNode for Expression {
             },
             Expression::Prefix { right, .. } => right.get_token_literal(),
             Expression::Infix { .. } => "".to_string(),
+            Expression::Boolean { .. } => "".to_string(),
         }
     }
 }
@@ -279,6 +307,7 @@ impl Token {
             Token::Int(_) => Some(Parser::parse_int),
             Token::Bang => Some(Parser::parse_prefix_expression),
             Token::Minus => Some(Parser::parse_prefix_expression),
+            Token::True | Token::False => Some(Parser::parse_boolean_expression),
             _ => None,
         }
     }
