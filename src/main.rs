@@ -1,6 +1,6 @@
-use std::io::{BufRead, Write};
+use std::io::{self, BufRead, Write};
 
-use kl_rs::{lexer::Lexer, token::Token};
+use kl_rs::{lexer::Lexer, parser::Parser, token::Token};
 
 fn main() {
     let stdin = std::io::stdin();
@@ -18,22 +18,35 @@ fn main() {
             .read_line(&mut input)
             .expect("error while reading from stdin");
 
-        let mut lexer = Lexer::new(input.to_string());
-
-        if input == "exit\n" {
-            break;
+        match input.as_str() {
+            "exit\n" => break,
+            "clear\n" => {
+                print!("\x1B[2J\x1B[1;1H");
+                io::stdout().flush().expect("could not flush stdout");
+                continue;
+            }
+            _ => {}
         }
+
+        let mut lexer = Lexer::new(input.to_string());
+        let mut parser = Parser::new(lexer.clone());
 
         println!("Tokens: \n");
 
-        loop {
-            let token = lexer.next_token();
-            if token == Token::Eof {
-                break;
-            }
-            println!("{:?}", token);
-        }
+        let mut token = lexer.next_token();
 
+        while token != Token::Eof {
+            println!("{:?}", token);
+            token = lexer.next_token();
+        }
+        println!();
+
+        let program = parser.parse_program();
+
+        println!("Parsed program: ");
+        for statement in program.statements.iter() {
+            println!("statement: {:#?}", statement);
+        }
         println!();
     }
 }
