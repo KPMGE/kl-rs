@@ -26,6 +26,11 @@ pub enum Expression {
         consequence: BlockStatement,         // Statement::BlockStatement
         alternative: Option<BlockStatement>, // Statement::BlockStatement
     },
+    FunctionExpression {
+        token: Token,           // Token::Fn
+        parameters: Vec<Token>, // Vec<Token::Identifier>
+        body: BlockStatement,
+    },
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -122,7 +127,10 @@ impl Parser {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Identifier(_)) {
-            self.report_expected_token_error(Token::Identifier("some identifier".to_string()), self.current_token.clone());
+            self.report_expected_token_error(
+                Token::Identifier("some identifier".to_string()),
+                self.current_token.clone(),
+            );
             return None;
         }
 
@@ -171,7 +179,10 @@ impl Parser {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Int(_)) {
-            self.report_expected_token_error(Token::Int("number".to_string()), self.current_token.clone());
+            self.report_expected_token_error(
+                Token::Int("number".to_string()),
+                self.current_token.clone(),
+            );
             return None;
         }
 
@@ -298,12 +309,12 @@ impl Parser {
 
         self.advance_tokens();
 
-        let alternative =  match self.current_token {
-            Token::Else => { 
+        let alternative = match self.current_token {
+            Token::Else => {
                 self.advance_tokens();
                 self.parse_block_statement()
-            },
-            _ => None
+            }
+            _ => None,
         };
 
         Some(Expression::IfExpression {
@@ -312,6 +323,53 @@ impl Parser {
             consequence,
             alternative,
         })
+    }
+
+    fn parse_function_expression(&mut self) -> Option<Expression> {
+        // fn(x, y....) {}
+        
+        self.advance_tokens();
+
+        if !self.expect_current_token(Token::LeftParentesis) {
+            self.report_expected_token_error(Token::LeftParentesis, self.current_token.clone());
+            return None;
+        }
+
+        let parameters = self.parse_function_parameters()?;
+        let body = self.parse_block_statement()?;
+
+        Some(Expression::FunctionExpression {
+            token: Token::Function,
+            parameters,
+            body,
+        })
+    }
+
+    fn parse_function_parameters(&mut self) -> Option<Vec<Token>> {
+        let mut parameters = Vec::new();
+
+        if self.next_token == Token::RightParentesis {
+            return Some(parameters);
+        }
+
+        let identifier = self.current_token.clone();
+        parameters.push(identifier);
+
+        while self.next_token == Token::Comma {
+            self.advance_tokens();
+            self.advance_tokens();
+            let identifier = self.current_token.clone();
+            parameters.push(identifier);
+        }
+
+        if !self.expect_next_token(Token::RightParentesis) {
+            self.report_expected_token_error(Token::RightParentesis, self.next_token.clone());
+            return None;
+        }
+
+        self.advance_tokens();
+
+        Some(parameters)
     }
 
     fn parse_block_statement(&mut self) -> Option<BlockStatement> {
@@ -365,20 +423,7 @@ impl Parser {
 
 impl AstNode for Expression {
     fn get_token_literal(&self) -> String {
-        match self {
-            Expression::Int { token } => match &token {
-                Token::Int(num) => num.to_string(),
-                _ => todo!(),
-            },
-            Expression::Identifier { token } => match &token {
-                Token::Identifier(name) => name.to_string(),
-                _ => todo!(),
-            },
-            Expression::Prefix { right, .. } => right.get_token_literal(),
-            Expression::Infix { .. } => todo!(),
-            Expression::Boolean { .. } => todo!(),
-            Expression::IfExpression { .. } => todo!(),
-        }
+        todo!()
     }
 }
 
@@ -408,6 +453,7 @@ impl Token {
             Token::Minus => Some(Parser::parse_prefix_expression),
             Token::True | Token::False => Some(Parser::parse_boolean_expression),
             Token::If => Some(Parser::parse_if_expression),
+            Token::Function => Some(Parser::parse_function_expression),
             _ => None,
         }
     }

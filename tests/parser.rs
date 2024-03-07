@@ -373,7 +373,49 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
     }
 }
 
-fn given_a_function_expression_it_should_parse_correctly() {}
+#[test]
+fn given_a_function_expression_it_should_parse_correctly() {
+    let code = "fn(a, b) { a + b };";
+    let expected_expression = Expression::FunctionExpression {
+        token: Token::Function,
+        parameters: vec![
+            Token::Identifier("a".to_string()),
+            Token::Identifier("b".to_string()),
+        ],
+        body: BlockStatement {
+            token: Token::LeftBrace,
+            statements: vec![Statement::ExpressionStatement {
+                token: Token::Identifier("a".to_string()),
+                value: Expression::Infix {
+                    operator: Token::Plus,
+                    left: Box::new(Expression::Identifier {
+                        token: Token::Identifier("a".to_string()),
+                    }),
+                    right: Box::new(Expression::Identifier {
+                        token: Token::Identifier("b".to_string()),
+                    }),
+                },
+            }],
+        },
+    };
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parsed_program.statements.len(), 1);
+    assert_eq!(parser.errors.len(), 0);
+
+    let statement = parsed_program.statements.first().unwrap();
+
+    match statement {
+        Statement::ExpressionStatement { token, value } => {
+            assert_eq!(*token, Token::Function);
+            assert_eq!(*value, expected_expression);
+        }
+        _ => panic!("Unexpected expression!"),
+    }
+}
 
 fn assert_boolean_expression(code: &str, expected_token: Token, expected_expression: &Expression) {
     let lexer = Lexer::new(code.to_string());
