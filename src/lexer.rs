@@ -40,10 +40,10 @@ impl Lexer {
         let ch = self.current_char.unwrap();
 
         let token = match ch {
-            '(' => Token::RightParentesis,
-            ')' => Token::LeftParentesis,
-            '{' => Token::RightBrace,
-            '}' => Token::LeftBrace,
+            '(' => Token::LeftParentesis,
+            ')' => Token::RightParentesis,
+            '{' => Token::LeftBrace,
+            '}' => Token::RightBrace,
             '+' => Token::Plus,
             '-' => Token::Minus,
             '*' => Token::Asterisk,

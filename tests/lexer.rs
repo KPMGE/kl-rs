@@ -4,10 +4,10 @@ use kl_rs::{lexer::Lexer, token::Token};
 fn given_code_with_single_characters_it_should_parse_correctly() {
     let code = "{}()+=,-!*/><;";
     let expected_tokens = vec![
-        Token::RightBrace,
         Token::LeftBrace,
-        Token::RightParentesis,
+        Token::RightBrace,
         Token::LeftParentesis,
+        Token::RightParentesis,
         Token::Plus,
         Token::Assign,
         Token::Comma,
