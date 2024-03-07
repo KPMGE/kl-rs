@@ -48,5 +48,11 @@ fn main() {
             println!("statement: {:#?}", statement);
         }
         println!();
+
+        println!("ERRORS: ");
+        for err in parser.errors {
+            println!("ERROR: {:?}", err);
+        }
+        println!();
     }
 }
