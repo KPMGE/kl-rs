@@ -97,7 +97,12 @@ fn given_a_variable_name_it_should_parse_correctly() {
     match statement {
         Statement::ExpressionStatement { token, value } => {
             assert_eq!(*token, Token::Identifier("foo".to_string()));
-            assert_eq!(value.get_token_literal(), "foo");
+            assert_eq!(
+                *value,
+                Expression::Identifier {
+                    token: Token::Identifier("foo".to_string())
+                }
+            );
         }
         _ => panic!("wrong statement!"),
     }
@@ -119,7 +124,12 @@ fn given_a_number_expression_it_should_parse_correctly() {
     match statement {
         Statement::ExpressionStatement { token, value } => {
             assert_eq!(*token, Token::Int("5".to_string()));
-            assert_eq!(value.get_token_literal(), "5");
+            assert_eq!(
+                *value,
+                Expression::Int {
+                    token: Token::Int("5".to_string())
+                }
+            );
         }
         _ => panic!("wrong statement!"),
     }
@@ -362,6 +372,8 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
         _ => panic!("Unexpected statement!"),
     }
 }
+
+fn given_a_function_expression_it_should_parse_correctly() {}
 
 fn assert_boolean_expression(code: &str, expected_token: Token, expected_expression: &Expression) {
     let lexer = Lexer::new(code.to_string());
