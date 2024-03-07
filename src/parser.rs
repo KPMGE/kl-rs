@@ -18,11 +18,23 @@ pub enum Expression {
         right: Box<Expression>,
     },
     Boolean {
-        token: Token // Token::True or Token::False
-    }
+        token: Token, // Token::True or Token::False
+    },
+    IfExpression {
+        token: Token, // Token::If
+        condition: Box<Expression>,
+        consequence: BlockStatement,         // Statement::BlockStatement
+        alternative: Option<BlockStatement>, // Statement::BlockStatement
+    },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
+pub struct BlockStatement {
+    pub token: Token, // Token::LeftBrace
+    pub statements: Vec<Statement>,
+}
+
+#[derive(Debug, Eq, PartialEq)]
 pub enum Statement {
     LetStatement {
         token: Token,     // Token::Let
@@ -110,7 +122,7 @@ impl Parser {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Identifier(_)) {
-            self.report_expected_token_error(Token::Identifier("some identifier".to_string()));
+            self.report_expected_token_error(Token::Identifier("some identifier".to_string()), self.current_token.clone());
             return None;
         }
 
@@ -119,7 +131,7 @@ impl Parser {
         self.advance_tokens();
 
         if self.current_token != Token::Assign {
-            self.report_expected_token_error(Token::Assign);
+            self.report_expected_token_error(Token::Assign, self.current_token.clone());
             return None;
         }
 
@@ -130,7 +142,7 @@ impl Parser {
         self.advance_tokens();
 
         if self.current_token != Token::Semicolon {
-            self.report_expected_token_error(Token::Semicolon);
+            self.report_expected_token_error(Token::Semicolon, self.current_token.clone());
             return None;
         }
 
@@ -159,7 +171,7 @@ impl Parser {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Int(_)) {
-            self.report_expected_token_error(Token::Int("number".to_string()));
+            self.report_expected_token_error(Token::Int("number".to_string()), self.current_token.clone());
             return None;
         }
 
@@ -190,7 +202,7 @@ impl Parser {
     fn expect_current_token(&mut self, token: Token) -> bool {
         if self.current_token == token {
             self.advance_tokens();
-            true;
+            return true;
         }
         false
     }
@@ -198,7 +210,7 @@ impl Parser {
     fn expect_next_token(&mut self, token: Token) -> bool {
         if self.next_token == token {
             self.advance_tokens();
-            true;
+            return true;
         }
         false
     }
@@ -241,13 +253,13 @@ impl Parser {
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
         self.advance_tokens();
 
-        let expression = self.parse_expression(Precedence::Lowest);
+        let expression = self.parse_expression(Precedence::Lowest)?;
 
         if !self.expect_next_token(Token::RightParentesis) {
-            return None
+            return None;
         }
 
-        expression
+        Some(expression)
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
@@ -262,7 +274,70 @@ impl Parser {
     }
 
     fn parse_boolean_expression(&mut self) -> Option<Expression> {
-        Some(Expression::Boolean { token: self.current_token.clone() })
+        Some(Expression::Boolean {
+            token: self.current_token.clone(),
+        })
+    }
+
+    fn parse_if_expression(&mut self) -> Option<Expression> {
+        if !self.expect_next_token(Token::LeftParentesis) {
+            self.report_expected_token_error(Token::LeftParentesis, self.next_token.clone());
+            return None;
+        }
+        self.advance_tokens();
+
+        let condition = self.parse_expression(Precedence::Lowest)?;
+
+        if !self.expect_next_token(Token::RightParentesis) {
+            self.report_expected_token_error(Token::LeftParentesis, self.next_token.clone());
+            return None;
+        }
+        self.advance_tokens();
+
+        let consequence = self.parse_block_statement()?;
+
+        Some(Expression::IfExpression {
+            token: Token::If,
+            condition: Box::new(condition),
+            consequence,
+            alternative: None,
+        })
+    }
+
+    fn parse_block_statement(&mut self) -> Option<BlockStatement> {
+        if !self.expect_current_token(Token::LeftBrace) {
+            self.report_expected_token_error(Token::LeftBrace, self.current_token.clone());
+            return None;
+        }
+
+        let mut statements = Vec::new();
+
+        while self.current_token != Token::RightBrace && self.current_token != Token::Eof {
+            match self.current_token {
+                Token::Let => {
+                    if let Some(statement) = self.parse_let_statement() {
+                        statements.push(statement);
+                    }
+                }
+                Token::Return => {
+                    if let Some(statement) = self.parse_return_statement() {
+                        statements.push(statement);
+                    }
+                }
+                _ => {
+                    if let Some(statement) = self.parse_expression_statement() {
+                        statements.push(statement);
+                    }
+                }
+            }
+
+            self.advance_tokens();
+        }
+
+        Some(BlockStatement {
+            token: Token::LeftBrace,
+            statements,
+        })
     }
 
     fn advance_tokens(&mut self) {
@@ -270,10 +345,10 @@ impl Parser {
         self.next_token = self.lexer.next_token();
     }
 
-    fn report_expected_token_error(&mut self, expected_token: Token) {
+    fn report_expected_token_error(&mut self, expected_token: Token, actual_token: Token) {
         self.errors.push(format!(
             "expected token to be '{:?}' got '{:?}'",
-            expected_token, self.current_token
+            expected_token, actual_token
         ));
     }
 }
@@ -290,8 +365,9 @@ impl AstNode for Expression {
                 _ => todo!(),
             },
             Expression::Prefix { right, .. } => right.get_token_literal(),
-            Expression::Infix { .. } => "".to_string(),
-            Expression::Boolean { .. } => "".to_string(),
+            Expression::Infix { .. } => todo!(),
+            Expression::Boolean { .. } => todo!(),
+            Expression::IfExpression { .. } => todo!(),
         }
     }
 }
@@ -321,6 +397,7 @@ impl Token {
             Token::LeftParentesis => Some(Parser::parse_grouped_expression),
             Token::Minus => Some(Parser::parse_prefix_expression),
             Token::True | Token::False => Some(Parser::parse_boolean_expression),
+            Token::If => Some(Parser::parse_if_expression),
             _ => None,
         }
     }

@@ -1,7 +1,7 @@
 use kl_rs::{
     ast::AstNode,
     lexer::Lexer,
-    parser::{Expression, Parser, Statement},
+    parser::{BlockStatement, Expression, Parser, Statement},
     token::Token,
 };
 
@@ -232,33 +232,83 @@ fn given_boolean_expression_it_should_parse_correctly() {
 #[test]
 fn given_a_grouped_expression_it_should_parse_correctly() {
     let test_cases = vec![
-        ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
-        ("-(5 + 5)", "(-(5 + 5))")
+        ("(1 + (2 + 3)) + 4", "((1 + (2 + 3)) + 4)"),
+        ("-(5 + 5)", "(-(5 + 5))"),
     ];
 
-    test_cases
-        .iter()
-        .for_each(|(case, expected)| {
+    test_cases.iter().for_each(|(case, expected)| {
+        let lexer = Lexer::new(case.to_string());
+        let mut parser = Parser::new(lexer);
 
-            let lexer = Lexer::new(case.to_string());
-            let mut parser = Parser::new(lexer);
+        let parsed_program = parser.parse_program();
 
-            let parsed_program = parser.parse_program();
+        assert_eq!(parser.errors.len(), 0);
 
-            assert_eq!(parser.errors.len(), 0);
+        let lexer = Lexer::new(expected.to_string());
+        let mut parser = Parser::new(lexer);
 
+        let expected_parsed_program = parser.parse_program();
 
-            let lexer = Lexer::new(expected.to_string());
-            let mut parser = Parser::new(lexer);
+        assert_eq!(parser.errors.len(), 0);
 
-            let expected_parsed_program = parser.parse_program();
+        let expression = match parsed_program.statements.first().unwrap() {
+            Statement::ExpressionStatement { value, .. } => value,
+            _ => panic!("Unexpected expression!")
+        };
 
-            assert_eq!(parser.errors.len(), 0);
+        let expected_expression = match expected_parsed_program.statements.first().unwrap() {
+            Statement::ExpressionStatement { value, .. } => value,
+            _ => panic!("Unexpected expression!")
+        };
 
-            assert_eq!(parsed_program, expected_parsed_program);
-        });
+        assert_eq!(expression, expected_expression);
+    });
 }
 
+#[test]
+fn given_an_if_expression_it_should_parse_correctly() {
+    let code = "if (x < y) { x }";
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+
+    let expected_expression = Expression::IfExpression {
+        token: Token::If,
+        condition: Box::new(Expression::Infix {
+            operator: Token::LessThan,
+            left: Box::new(Expression::Identifier {
+                token: Token::Identifier("x".to_string()),
+            }),
+            right: Box::new(Expression::Identifier {
+                token: Token::Identifier("y".to_string()),
+            }),
+        }),
+        consequence: BlockStatement {
+            token: Token::LeftBrace,
+            statements: vec![Statement::ExpressionStatement {
+                token: Token::Identifier("x".to_string()),
+                value: Expression::Identifier {
+                    token: Token::Identifier("x".to_string()),
+                },
+            }],
+        },
+        alternative: None,
+    };
+
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parsed_program.statements.len(), 1);
+    assert_eq!(parser.errors.len(), 0);
+
+    let statement = parsed_program.statements.first().unwrap();
+
+    match statement {
+        Statement::ExpressionStatement { token, value } => {
+            assert_eq!(*token, Token::If);
+            assert_eq!(*value, expected_expression);
+        },
+        _ => panic!("Unexpected statement!")
+    }
+}
 
 fn assert_boolean_expression(code: &str, expected_token: Token, expected_expression: &Expression) {
     let lexer = Lexer::new(code.to_string());
