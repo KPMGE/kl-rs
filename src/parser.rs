@@ -296,11 +296,21 @@ impl Parser {
 
         let consequence = self.parse_block_statement()?;
 
+        self.advance_tokens();
+
+        let alternative =  match self.current_token {
+            Token::Else => { 
+                self.advance_tokens();
+                self.parse_block_statement()
+            },
+            _ => None
+        };
+
         Some(Expression::IfExpression {
             token: Token::If,
             condition: Box::new(condition),
             consequence,
-            alternative: None,
+            alternative,
         })
     }
 

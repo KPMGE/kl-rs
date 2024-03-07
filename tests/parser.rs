@@ -253,12 +253,12 @@ fn given_a_grouped_expression_it_should_parse_correctly() {
 
         let expression = match parsed_program.statements.first().unwrap() {
             Statement::ExpressionStatement { value, .. } => value,
-            _ => panic!("Unexpected expression!")
+            _ => panic!("Unexpected expression!"),
         };
 
         let expected_expression = match expected_parsed_program.statements.first().unwrap() {
             Statement::ExpressionStatement { value, .. } => value,
-            _ => panic!("Unexpected expression!")
+            _ => panic!("Unexpected expression!"),
         };
 
         assert_eq!(expression, expected_expression);
@@ -305,8 +305,61 @@ fn given_an_if_expression_it_should_parse_correctly() {
         Statement::ExpressionStatement { token, value } => {
             assert_eq!(*token, Token::If);
             assert_eq!(*value, expected_expression);
+        }
+        _ => panic!("Unexpected statement!"),
+    }
+}
+
+#[test]
+fn given_an_if_else_expression_it_should_parse_correctly() {
+    let code = "if (x < y) { x } else { y }";
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+
+    let expected_expression = Expression::IfExpression {
+        token: Token::If,
+        condition: Box::new(Expression::Infix {
+            operator: Token::LessThan,
+            left: Box::new(Expression::Identifier {
+                token: Token::Identifier("x".to_string()),
+            }),
+            right: Box::new(Expression::Identifier {
+                token: Token::Identifier("y".to_string()),
+            }),
+        }),
+        consequence: BlockStatement {
+            token: Token::LeftBrace,
+            statements: vec![Statement::ExpressionStatement {
+                token: Token::Identifier("x".to_string()),
+                value: Expression::Identifier {
+                    token: Token::Identifier("x".to_string()),
+                },
+            }],
         },
-        _ => panic!("Unexpected statement!")
+        alternative: Some(BlockStatement {
+            token: Token::LeftBrace,
+            statements: vec![Statement::ExpressionStatement {
+                token: Token::Identifier("y".to_string()),
+                value: Expression::Identifier {
+                    token: Token::Identifier("y".to_string()),
+                },
+            }],
+        }),
+    };
+
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parsed_program.statements.len(), 1);
+    assert_eq!(parser.errors.len(), 0);
+
+    let statement = parsed_program.statements.first().unwrap();
+
+    match statement {
+        Statement::ExpressionStatement { token, value } => {
+            assert_eq!(*token, Token::If);
+            assert_eq!(*value, expected_expression);
+        }
+        _ => panic!("Unexpected statement!"),
     }
 }
 
