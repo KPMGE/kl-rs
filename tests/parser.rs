@@ -1,5 +1,4 @@
 use kl_rs::{
-    ast::AstNode,
     lexer::Lexer,
     parser::{BlockStatement, Expression, Parser, Statement},
     token::Token,
@@ -414,6 +413,55 @@ fn given_a_function_expression_it_should_parse_correctly() {
             assert_eq!(*value, expected_expression);
         }
         _ => panic!("Unexpected expression!"),
+    }
+}
+
+#[test]
+fn given_a_call_expression_it_should_parse_correctly() {
+    let code = "add(2 * 3, 1 + 4);";
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parsed_program.statements.len(), 1);
+    assert_eq!(parser.errors.len(), 0);
+
+    let expected_expression = Expression::CallExpression {
+        token: Token::LeftParentesis,
+        function: Box::new(Expression::Identifier {
+            token: Token::Identifier("add".to_string()),
+        }),
+        arguments: vec![
+            Expression::Infix {
+                operator: Token::Asterisk,
+                left: Box::new(Expression::Int {
+                    token: Token::Int("2".to_string()),
+                }),
+                right: Box::new(Expression::Int {
+                    token: Token::Int("3".to_string()),
+                }),
+            },
+            Expression::Infix {
+                operator: Token::Plus,
+                left: Box::new(Expression::Int {
+                    token: Token::Int("1".to_string()),
+                }),
+                right: Box::new(Expression::Int {
+                    token: Token::Int("4".to_string()),
+                }),
+            },
+        ],
+    };
+
+    let statement = parsed_program.statements.first().unwrap();
+
+    match statement {
+        Statement::ExpressionStatement { value, .. } => {
+            assert_eq!(*value, expected_expression);
+        }
+        _ => panic!("Unexpected statement!"),
     }
 }
 

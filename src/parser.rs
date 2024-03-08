@@ -31,6 +31,11 @@ pub enum Expression {
         parameters: Vec<Token>, // Vec<Token::Identifier>
         body: BlockStatement,
     },
+    CallExpression {
+        token: Token,              // Token::LeftParentesis
+        function: Box<Expression>, // Expression::FunctionExpression or Expression::Identifier
+        arguments: Vec<Expression>,
+    },
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -326,8 +331,6 @@ impl Parser {
     }
 
     fn parse_function_expression(&mut self) -> Option<Expression> {
-        // fn(x, y....) {}
-        
         self.advance_tokens();
 
         if !self.expect_current_token(Token::LeftParentesis) {
@@ -407,6 +410,45 @@ impl Parser {
             statements,
         })
     }
+    fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
+        let token = self.current_token.clone();
+
+        self.advance_tokens();
+        let arguments = self.parse_call_expression_arguments()?;
+
+        Some(Expression::CallExpression {
+            token,
+            function: Box::new(function),
+            arguments
+        })
+    }
+
+    fn parse_call_expression_arguments(&mut self) -> Option<Vec<Expression>> {
+        let mut arguments = Vec::new();
+
+        if self.next_token == Token::RightParentesis {
+            self.advance_tokens();
+            return Some(arguments);
+        }
+
+        let expression = self.parse_expression(Precedence::Lowest)?;
+        arguments.push(expression);
+
+
+        while self.next_token == Token::Comma {
+            self.advance_tokens();
+            self.advance_tokens();
+            let expression = self.parse_expression(Precedence::Lowest)?;
+            arguments.push(expression);
+        }
+
+        if !self.expect_next_token(Token::RightParentesis) {
+            self.report_expected_token_error(Token::RightParentesis, self.next_token.clone());
+            return None;
+        }
+
+        Some(arguments)
+    }
 
     fn advance_tokens(&mut self) {
         self.current_token = self.next_token.clone();
@@ -438,6 +480,7 @@ impl Token {
         match self {
             Token::Equals | Token::NotEquals => Precedence::Equals,
             Token::Plus | Token::Minus => Precedence::Sum,
+            Token::LeftParentesis => Precedence::Call,
             Token::Asterisk | Token::Slash => Precedence::Product,
             Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
             _ => Precedence::Lowest,
@@ -468,6 +511,7 @@ impl Token {
             Token::LessThan => Some(Parser::parse_infix_expression),
             Token::Equals => Some(Parser::parse_infix_expression),
             Token::NotEquals => Some(Parser::parse_infix_expression),
+            Token::LeftParentesis => Some(Parser::parse_call_expression),
             _ => None,
         }
     }
