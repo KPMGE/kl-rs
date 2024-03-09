@@ -17,8 +17,12 @@ impl Evaluator {
         match node {
             Statement::ExpressionStatement { value, .. } => {
                 if let Expression::Int { token: Token::Int(value) } = value {
-                    Object::Integer(value.parse::<i32>().expect("Could not parse integer"))
-                } else {
+                    return Object::Integer(value.parse::<i32>().expect("Could not parse integer"));
+                } 
+                if let Expression::Boolean { value, .. } = value {
+                    Object::Boolean(value)
+                } 
+                else {
                     todo!()
                 }
             },
