@@ -463,17 +463,9 @@ impl Parser {
     }
 }
 
-impl AstNode for Expression {
-    fn get_token_literal(&self) -> String {
-        todo!()
-    }
-}
+impl AstNode for Expression {}
 
-impl AstNode for Statement {
-    fn get_token_literal(&self) -> String {
-        todo!()
-    }
-}
+impl AstNode for Statement {}
 
 impl Token {
     fn precedence(&self) -> Precedence {
