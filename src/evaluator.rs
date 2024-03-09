@@ -16,16 +16,10 @@ impl Evaluator {
     pub fn eval(&self, node: Statement) -> Object {
         match node {
             Statement::ExpressionStatement { value, .. } => {
-                match value {
-                    Expression::Int { token } => {
-                        match token {
-                            Token::Int(value) => {
-                                Object::Integer(value.parse::<i32>().expect("Could not parse integer"))
-                            }
-                            _ => todo!()
-                        }
-                    },
-                    _ => todo!()
+                if let Expression::Int { token: Token::Int(value) } = value {
+                    Object::Integer(value.parse::<i32>().expect("Could not parse integer"))
+                } else {
+                    todo!()
                 }
             },
             _ => todo!()
