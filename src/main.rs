@@ -1,6 +1,6 @@
 use std::io::{self, BufRead, Write};
 
-use kl_rs::{lexer::Lexer, parser::Parser, token::Token};
+use kl_rs::{evaluator::Evaluator, lexer::Lexer, parser::Parser, token::Token};
 
 fn main() {
     let stdin = std::io::stdin();
@@ -54,5 +54,12 @@ fn main() {
             println!("ERROR: {:?}", err);
         }
         println!();
+
+        println!("EVALUATED: ");
+        let evaluator = Evaluator::new();
+        for statement in program.statements {
+            let object = evaluator.eval(statement);
+            println!("{}", object.inspect());
+        }
     }
 }

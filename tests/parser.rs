@@ -1,6 +1,7 @@
 use kl_rs::{
+    ast::{AstNode, BlockStatement, Expression, Statement},
     lexer::Lexer,
-    parser::{BlockStatement, Expression, Parser, Statement},
+    parser::Parser,
     token::Token,
 };
 
@@ -30,7 +31,7 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
             let expected_identifier = expected_identifiers.get(idx).unwrap();
             let expected_int = expected_ints.get(idx).unwrap();
 
-            let expected_statement = Statement::LetStatement {
+            let expected_statement = AstNode::Statement(Statement::LetStatement {
                 token: Token::Let,
                 name: Expression::Identifier {
                     token: Token::Identifier(expected_identifier.to_string()),
@@ -38,7 +39,7 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
                 value: Expression::Int {
                     token: Token::Int(expected_int.to_string()),
                 },
-            };
+            });
 
             assert_eq!(*statement, expected_statement);
         })
@@ -71,10 +72,10 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
                 token: Token::Int(expected_int.to_string()),
             };
 
-            let expected_statement = Statement::ReturnStatement {
+            let expected_statement = AstNode::Statement(Statement::ReturnStatement {
                 token: Token::Return,
                 value: expected_expression,
-            };
+            });
 
             assert_eq!(*statement, expected_statement);
         })
@@ -94,10 +95,9 @@ fn given_a_variable_name_it_should_parse_correctly() {
 
     let statement = parsed_program.statements.first().unwrap();
     match statement {
-        Statement::ExpressionStatement { token, value } => {
-            assert_eq!(*token, Token::Identifier("foo".to_string()));
+        AstNode::Expression(expression) => {
             assert_eq!(
-                *value,
+                *expression,
                 Expression::Identifier {
                     token: Token::Identifier("foo".to_string())
                 }
@@ -121,10 +121,9 @@ fn given_a_number_expression_it_should_parse_correctly() {
 
     let statement = parsed_program.statements.first().unwrap();
     match statement {
-        Statement::ExpressionStatement { token, value } => {
-            assert_eq!(*token, Token::Int("5".to_string()));
+        AstNode::Expression(expression) => {
             assert_eq!(
-                *value,
+                *expression,
                 Expression::Int {
                     token: Token::Int("5".to_string())
                 }
@@ -157,14 +156,13 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
         .iter()
         .enumerate()
         .for_each(|(idx, statement)| match statement {
-            Statement::ExpressionStatement { token, value } => {
+            AstNode::Expression(expression) => {
                 let expected_operator = expected_operators.get(idx).unwrap();
                 let expected_right_expression = Expression::Int {
                     token: Token::Int(expected_values.get(idx).unwrap().to_string()),
                 };
 
-                assert_eq!(token, expected_operators.get(idx).unwrap());
-                match value {
+                match expression {
                     Expression::Prefix { operator, right } => {
                         assert_eq!(operator, expected_operator);
                         assert_eq!(*right, Box::new(expected_right_expression));
@@ -219,22 +217,27 @@ fn given_infix_expressions_it_should_parse_correctly() {
 #[test]
 fn given_boolean_expression_it_should_parse_correctly() {
     let test_cases = vec!["true;", "false;", "!true;"];
-    let expected_tokens = vec![Token::True, Token::False, Token::Bang];
     let expected_expressions = vec![
-        Expression::Boolean { token: Token::True },
+        Expression::Boolean {
+            token: Token::True,
+            value: true,
+        },
         Expression::Boolean {
             token: Token::False,
+            value: false,
         },
         Expression::Prefix {
             operator: Token::Bang,
-            right: Box::new(Expression::Boolean { token: Token::True }),
+            right: Box::new(Expression::Boolean {
+                token: Token::True,
+                value: true,
+            }),
         },
     ];
 
     test_cases.iter().enumerate().for_each(|(idx, case)| {
-        let token = expected_tokens.get(idx).unwrap().clone();
         let expression = expected_expressions.get(idx).unwrap();
-        assert_boolean_expression(case, token, expression);
+        assert_boolean_expression(case, expression);
     });
 }
 
@@ -261,12 +264,12 @@ fn given_a_grouped_expression_it_should_parse_correctly() {
         assert_eq!(parser.errors.len(), 0);
 
         let expression = match parsed_program.statements.first().unwrap() {
-            Statement::ExpressionStatement { value, .. } => value,
+            AstNode::Expression(exp) => exp,
             _ => panic!("Unexpected expression!"),
         };
 
         let expected_expression = match expected_parsed_program.statements.first().unwrap() {
-            Statement::ExpressionStatement { value, .. } => value,
+            AstNode::Expression(exp) => exp,
             _ => panic!("Unexpected expression!"),
         };
 
@@ -293,12 +296,9 @@ fn given_an_if_expression_it_should_parse_correctly() {
         }),
         consequence: BlockStatement {
             token: Token::LeftBrace,
-            statements: vec![Statement::ExpressionStatement {
+            statements: vec![AstNode::Expression(Expression::Identifier {
                 token: Token::Identifier("x".to_string()),
-                value: Expression::Identifier {
-                    token: Token::Identifier("x".to_string()),
-                },
-            }],
+            })],
         },
         alternative: None,
     };
@@ -311,10 +311,7 @@ fn given_an_if_expression_it_should_parse_correctly() {
     let statement = parsed_program.statements.first().unwrap();
 
     match statement {
-        Statement::ExpressionStatement { token, value } => {
-            assert_eq!(*token, Token::If);
-            assert_eq!(*value, expected_expression);
-        }
+        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
         _ => panic!("Unexpected statement!"),
     }
 }
@@ -338,21 +335,15 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
         }),
         consequence: BlockStatement {
             token: Token::LeftBrace,
-            statements: vec![Statement::ExpressionStatement {
+            statements: vec![AstNode::Expression(Expression::Identifier {
                 token: Token::Identifier("x".to_string()),
-                value: Expression::Identifier {
-                    token: Token::Identifier("x".to_string()),
-                },
-            }],
+            })],
         },
         alternative: Some(BlockStatement {
             token: Token::LeftBrace,
-            statements: vec![Statement::ExpressionStatement {
+            statements: vec![AstNode::Expression(Expression::Identifier {
                 token: Token::Identifier("y".to_string()),
-                value: Expression::Identifier {
-                    token: Token::Identifier("y".to_string()),
-                },
-            }],
+            })],
         }),
     };
 
@@ -364,10 +355,7 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
     let statement = parsed_program.statements.first().unwrap();
 
     match statement {
-        Statement::ExpressionStatement { token, value } => {
-            assert_eq!(*token, Token::If);
-            assert_eq!(*value, expected_expression);
-        }
+        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
         _ => panic!("Unexpected statement!"),
     }
 }
@@ -383,18 +371,15 @@ fn given_a_function_expression_it_should_parse_correctly() {
         ],
         body: BlockStatement {
             token: Token::LeftBrace,
-            statements: vec![Statement::ExpressionStatement {
-                token: Token::Identifier("a".to_string()),
-                value: Expression::Infix {
-                    operator: Token::Plus,
-                    left: Box::new(Expression::Identifier {
-                        token: Token::Identifier("a".to_string()),
-                    }),
-                    right: Box::new(Expression::Identifier {
-                        token: Token::Identifier("b".to_string()),
-                    }),
-                },
-            }],
+            statements: vec![AstNode::Expression(Expression::Infix {
+                operator: Token::Plus,
+                left: Box::new(Expression::Identifier {
+                    token: Token::Identifier("a".to_string()),
+                }),
+                right: Box::new(Expression::Identifier {
+                    token: Token::Identifier("b".to_string()),
+                }),
+            })],
         },
     };
 
@@ -408,10 +393,7 @@ fn given_a_function_expression_it_should_parse_correctly() {
     let statement = parsed_program.statements.first().unwrap();
 
     match statement {
-        Statement::ExpressionStatement { token, value } => {
-            assert_eq!(*token, Token::Function);
-            assert_eq!(*value, expected_expression);
-        }
+        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
         _ => panic!("Unexpected expression!"),
     }
 }
@@ -458,14 +440,12 @@ fn given_a_call_expression_it_should_parse_correctly() {
     let statement = parsed_program.statements.first().unwrap();
 
     match statement {
-        Statement::ExpressionStatement { value, .. } => {
-            assert_eq!(*value, expected_expression);
-        }
+        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
         _ => panic!("Unexpected statement!"),
     }
 }
 
-fn assert_boolean_expression(code: &str, expected_token: Token, expected_expression: &Expression) {
+fn assert_boolean_expression(code: &str, expected_expression: &Expression) {
     let lexer = Lexer::new(code.to_string());
     let mut parser = Parser::new(lexer);
 
@@ -477,11 +457,8 @@ fn assert_boolean_expression(code: &str, expected_token: Token, expected_express
     let statement = parsed_program.statements.first().unwrap();
 
     match statement {
-        Statement::ExpressionStatement { token, value } => {
-            assert_eq!(*token, expected_token);
-            assert_eq!(value, expected_expression);
-        }
-        _ => panic!(),
+        AstNode::Expression(expression) => assert_eq!(expression, expected_expression),
+        _ => panic!("Unexpected statement!"),
     }
 }
 
@@ -497,7 +474,7 @@ fn assert_infix_expression(code: &str, expected_operator: Token, expected_litera
     let statement = parsed_program.statements.first().unwrap();
 
     match statement {
-        Statement::ExpressionStatement { value, .. } => {
+        AstNode::Expression(expression) => {
             let expected_left_value = expected_literals.0;
             let expected_right_value = expected_literals.1;
             let expected_left_exp = Expression::Int {
@@ -513,7 +490,7 @@ fn assert_infix_expression(code: &str, expected_operator: Token, expected_litera
                 right: Box::new(expected_right_exp),
             };
 
-            assert_eq!(*value, expected_expression);
+            assert_eq!(*expression, expected_expression);
         }
         _ => panic!(),
     }

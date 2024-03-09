@@ -1,80 +1,12 @@
-use crate::{ast::AstNode, lexer::Lexer, token::Token};
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum Expression {
-    Int {
-        token: Token, // Token::Int(val)
-    },
-    Identifier {
-        token: Token, // Token::Idetifier(name)
-    },
-    Prefix {
-        operator: Token, // Token::Bang, Token::Minus
-        right: Box<Expression>,
-    },
-    Infix {
-        operator: Token, // Token::Plus, Token::Minus, Token::Equals etc.
-        left: Box<Expression>,
-        right: Box<Expression>,
-    },
-    Boolean {
-        token: Token, // Token::True or Token::False
-    },
-    IfExpression {
-        token: Token, // Token::If
-        condition: Box<Expression>,
-        consequence: BlockStatement,         // Statement::BlockStatement
-        alternative: Option<BlockStatement>, // Statement::BlockStatement
-    },
-    FunctionExpression {
-        token: Token,           // Token::Fn
-        parameters: Vec<Token>, // Vec<Token::Identifier>
-        body: BlockStatement,
-    },
-    CallExpression {
-        token: Token,              // Token::LeftParentesis
-        function: Box<Expression>, // Expression::FunctionExpression or Expression::Identifier
-        arguments: Vec<Expression>,
-    },
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub struct BlockStatement {
-    pub token: Token, // Token::LeftBrace
-    pub statements: Vec<Statement>,
-}
-
-#[derive(Debug, Eq, PartialEq)]
-pub enum Statement {
-    LetStatement {
-        token: Token,     // Token::Let
-        name: Expression, // Expression::Identifer
-        value: Expression,
-    },
-    ReturnStatement {
-        token: Token, // Token::Return
-        value: Expression,
-    },
-    ExpressionStatement {
-        token: Token, // first expression token
-        value: Expression,
-    },
-}
-
-#[derive(Debug, PartialEq, PartialOrd)]
-enum Precedence {
-    Lowest,
-    Equals,
-    LessGreater,
-    Sum,
-    Product,
-    Prefix,
-    Call,
-}
+use crate::{
+    ast::{AstNode, BlockStatement, Expression, Precedence, Statement},
+    lexer::Lexer,
+    token::Token,
+};
 
 #[derive(Debug, PartialEq)]
 pub struct Program {
-    pub statements: Vec<Statement>,
+    pub statements: Vec<AstNode>,
 }
 
 #[derive(Debug)]
@@ -128,7 +60,7 @@ impl Parser {
         program
     }
 
-    fn parse_let_statement(&mut self) -> Option<Statement> {
+    fn parse_let_statement(&mut self) -> Option<AstNode> {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Identifier(_)) {
@@ -159,28 +91,24 @@ impl Parser {
             return None;
         }
 
-        Some(Statement::LetStatement {
+        Some(AstNode::Statement(Statement::LetStatement {
             token: Token::Let,
             name,
             value,
-        })
+        }))
     }
 
-    fn parse_expression_statement(&mut self) -> Option<Statement> {
-        let token = self.current_token.clone();
+    fn parse_expression_statement(&mut self) -> Option<AstNode> {
         let expression = self.parse_expression(Precedence::Lowest)?;
 
         if self.current_token == Token::Semicolon {
             self.advance_tokens();
         }
 
-        Some(Statement::ExpressionStatement {
-            token,
-            value: expression,
-        })
+        Some(AstNode::Expression(expression))
     }
 
-    fn parse_return_statement(&mut self) -> Option<Statement> {
+    fn parse_return_statement(&mut self) -> Option<AstNode> {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Int(_)) {
@@ -193,10 +121,10 @@ impl Parser {
 
         let expression = self.parse_expression(Precedence::Lowest)?;
 
-        Some(Statement::ReturnStatement {
+        Some(AstNode::Statement(Statement::ReturnStatement {
             token: Token::Return,
             value: expression,
-        })
+        }))
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
@@ -290,8 +218,18 @@ impl Parser {
     }
 
     fn parse_boolean_expression(&mut self) -> Option<Expression> {
+        let value = match self.current_token {
+            Token::True => true,
+            Token::False => false,
+            _ => {
+                self.report_error("boolean expressions should have either 'true' or 'false'");
+                return None;
+            }
+        };
+
         Some(Expression::Boolean {
             token: self.current_token.clone(),
+            value,
         })
     }
 
@@ -419,7 +357,7 @@ impl Parser {
         Some(Expression::CallExpression {
             token,
             function: Box::new(function),
-            arguments
+            arguments,
         })
     }
 
@@ -433,7 +371,6 @@ impl Parser {
 
         let expression = self.parse_expression(Precedence::Lowest)?;
         arguments.push(expression);
-
 
         while self.next_token == Token::Comma {
             self.advance_tokens();
@@ -461,17 +398,9 @@ impl Parser {
             expected_token, actual_token
         ));
     }
-}
 
-impl AstNode for Expression {
-    fn get_token_literal(&self) -> String {
-        todo!()
-    }
-}
-
-impl AstNode for Statement {
-    fn get_token_literal(&self) -> String {
-        todo!()
+    fn report_error(&mut self, message: &str) {
+        self.errors.push(format!("{}", message))
     }
 }
 
