@@ -221,13 +221,14 @@ fn given_boolean_expression_it_should_parse_correctly() {
     let test_cases = vec!["true;", "false;", "!true;"];
     let expected_tokens = vec![Token::True, Token::False, Token::Bang];
     let expected_expressions = vec![
-        Expression::Boolean { token: Token::True },
+        Expression::Boolean { token: Token::True, value: true },
         Expression::Boolean {
             token: Token::False,
+            value: false
         },
         Expression::Prefix {
             operator: Token::Bang,
-            right: Box::new(Expression::Boolean { token: Token::True }),
+            right: Box::new(Expression::Boolean { token: Token::True, value: true }),
         },
     ];
 

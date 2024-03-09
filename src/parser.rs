@@ -19,6 +19,7 @@ pub enum Expression {
     },
     Boolean {
         token: Token, // Token::True or Token::False
+        value: bool
     },
     IfExpression {
         token: Token, // Token::If
@@ -290,8 +291,18 @@ impl Parser {
     }
 
     fn parse_boolean_expression(&mut self) -> Option<Expression> {
+        let value = match self.current_token {
+            Token::True => true,
+            Token::False => false,
+            _ => {
+                self.report_error("boolean expressions should have either 'true' or 'false'");
+                return None;
+            }
+        };
+
         Some(Expression::Boolean {
             token: self.current_token.clone(),
+            value
         })
     }
 
@@ -460,6 +471,10 @@ impl Parser {
             "expected token to be '{:?}' got '{:?}'",
             expected_token, actual_token
         ));
+    }
+
+    fn report_error(&mut self, message: &str) {
+        self.errors.push(format!("{}", message))
     }
 }
 
