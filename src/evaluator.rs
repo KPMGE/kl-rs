@@ -33,6 +33,7 @@ impl Evaluator {
     fn eval_prefix_expression(&self, operator: Token, right: Object) -> Object {
         match operator {
             Token::Bang => self.eval_bang_expression(right),
+            Token::Minus => self.eval_minus_prefix_expression(right),
             _ => Object::Null,
         }
     }
@@ -42,6 +43,13 @@ impl Evaluator {
             Object::Boolean(value) => Object::Boolean(!value),
             Object::Null => Object::Boolean(true),
             _ => Object::Boolean(false),
+        }
+    }
+
+    fn eval_minus_prefix_expression(&self, right: Object) -> Object {
+        match right {
+            Object::Integer(value) => Object::Integer(-value),
+            _ => Object::Null
         }
     }
 }
