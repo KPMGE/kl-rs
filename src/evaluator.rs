@@ -1,11 +1,11 @@
-
-use crate::parser::{Statement, Expression};
+use crate::ast::{AstNode, Expression};
 use crate::token::Token;
 pub struct Evaluator {}
 
 pub enum Object {
     Integer(i32),
-    Boolean(bool)
+    Boolean(bool),
+    Null,
 }
 
 impl Evaluator {
@@ -13,20 +13,16 @@ impl Evaluator {
         Evaluator {}
     }
 
-    pub fn eval(&self, node: Statement) -> Object {
+    pub fn eval(&self, node: AstNode) -> Object {
         match node {
-            Statement::ExpressionStatement { value, .. } => {
-                if let Expression::Int { token: Token::Int(value) } = value {
-                    return Object::Integer(value.parse::<i32>().expect("Could not parse integer"));
-                } 
-                if let Expression::Boolean { value, .. } = value {
-                    Object::Boolean(value)
-                } 
-                else {
-                    todo!()
-                }
+            AstNode::Expression(expression) => match expression {
+                Expression::Int {
+                    token: Token::Int(value),
+                } => Object::Integer(value.parse::<i32>().expect("Could not parse integer")),
+                Expression::Boolean { value, .. } => Object::Boolean(value),
+                _ => todo!(),
             },
-            _ => todo!()
+            AstNode::Statement(_) => todo!(),
         }
     }
 }
@@ -35,7 +31,8 @@ impl Object {
     pub fn inspect(&self) -> String {
         match self {
             Object::Integer(value) => format!("{value}"),
-            Object::Boolean(value) => format!("{value}")
+            Object::Boolean(value) => format!("{value}"),
+            Object::Null => format!("null"),
         }
     }
 }
