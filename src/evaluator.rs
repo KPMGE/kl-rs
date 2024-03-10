@@ -24,6 +24,15 @@ impl Evaluator {
                     let right = self.eval(AstNode::Expression(*right));
                     self.eval_prefix_expression(operator, right)
                 }
+                Expression::Infix {
+                    operator,
+                    left,
+                    right,
+                } => {
+                    let left = self.eval(AstNode::Expression(*left));
+                    let right = self.eval(AstNode::Expression(*right));
+                    self.eval_infix_expression(left, right, operator)
+                }
                 _ => todo!(),
             },
             AstNode::Statement(_) => todo!(),
@@ -49,7 +58,30 @@ impl Evaluator {
     fn eval_minus_prefix_expression(&self, right: Object) -> Object {
         match right {
             Object::Integer(value) => Object::Integer(-value),
-            _ => Object::Null
+            _ => Object::Null,
+        }
+    }
+
+    fn eval_infix_expression(&self, left: Object, right: Object, operator: Token) -> Object {
+        let left_int = match left {
+            Object::Integer(num) => num,
+            _ => return Object::Null,
+        };
+        let right_int = match right {
+            Object::Integer(num) => num,
+            _ => return Object::Null,
+        };
+
+        match operator {
+            Token::Plus => Object::Integer(left_int + right_int),
+            Token::Minus => Object::Integer(left_int - right_int),
+            Token::Asterisk => Object::Integer(left_int * right_int),
+            Token::Slash => Object::Integer(left_int / right_int),
+            Token::Equals => Object::Boolean(left_int == right_int),
+            Token::NotEquals => Object::Boolean(left_int != right_int),
+            Token::LessThan => Object::Boolean(left_int < right_int),
+            Token::GreaterThan => Object::Boolean(left_int > right_int),
+            _ => Object::Null,
         }
     }
 }
