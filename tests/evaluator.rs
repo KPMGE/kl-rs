@@ -1,0 +1,25 @@
+use kl_rs::evaluator::{Object, Evaluator};
+use kl_rs::{
+    ast::{AstNode, BlockStatement, Expression, Statement},
+    lexer::Lexer,
+    parser::Parser,
+    token::Token,
+};
+
+#[test]
+fn given_an_integer_expression_it_should_evaluate_to_the_right_object() {
+    let test_codes = vec!["5", "10", "20"];
+    let expected_objects = vec![Object::Integer(5), Object::Integer(10), Object::Integer(20)];
+
+    test_codes.iter().enumerate().for_each(|(idx, code)| {
+        let lexer = Lexer::new(code.to_string());
+        let mut parser = Parser::new(lexer);
+        let parsed_program = parser.parse_program();
+        let node = parsed_program.statements.first().unwrap().clone();
+
+        let evaluator = Evaluator {};
+        let evaluated_obj = evaluator.eval(node);
+
+        assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
+    })
+} 

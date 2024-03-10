@@ -1,6 +1,6 @@
 use crate::token::Token;
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Expression {
     Int {
         token: Token, // Token::Int(val)
@@ -39,13 +39,13 @@ pub enum Expression {
     },
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, Clone, PartialEq)]
 pub struct BlockStatement {
     pub token: Token, // Token::LeftBrace
     pub statements: Vec<AstNode>,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Statement {
     LetStatement {
         token: Token,     // Token::Let
@@ -69,7 +69,7 @@ pub enum Precedence {
     Call,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, Clone, PartialEq)]
 pub enum AstNode {
     Statement(Statement),
     Expression(Expression)

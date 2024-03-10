@@ -2,6 +2,7 @@ use crate::ast::{AstNode, Expression};
 use crate::token::Token;
 pub struct Evaluator {}
 
+#[derive(Debug, PartialEq)]
 pub enum Object {
     Integer(i32),
     Boolean(bool),
