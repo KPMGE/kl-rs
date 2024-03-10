@@ -131,7 +131,7 @@ impl Parser {
         let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
         let left_expression = prefix_parse_fn(self)?;
 
-        let is_next_token_precedence_higher = precedence < self.next_token.precedence();
+        let is_next_token_precedence_higher = precedence <= self.next_token.precedence();
 
         while !self.expect_current_token(Token::Semicolon) && is_next_token_precedence_higher {
             if let Some(infix_parse_fn) = self.next_token.get_infix_parse_fn() {
