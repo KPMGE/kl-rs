@@ -52,7 +52,7 @@ impl Evaluator {
         match right {
             Object::Boolean(value) => Object::Boolean(!value),
             Object::Null => Object::Boolean(true),
-            _ => Object::Boolean(false),
+            _ => Object::Null,
         }
     }
 

@@ -41,3 +41,27 @@ fn given_boolean_expressions_it_should_evaluate_to_the_right_object() {
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
     })
 }
+
+#[test]
+fn given_prefix_expressions_it_should_evaluate_correctly() {
+    let test_codes = vec!["!true", "!false", "!!!!true", "-10", "!20"];
+    let expected_objects = vec![
+        Object::Boolean(false),
+        Object::Boolean(true),
+        Object::Boolean(true),
+        Object::Integer(-10),
+        Object::Null
+    ];
+
+    test_codes.iter().enumerate().for_each(|(idx, code)| {
+        let lexer = Lexer::new(code.to_string());
+        let mut parser = Parser::new(lexer);
+        let parsed_program = parser.parse_program();
+        let node = parsed_program.statements.first().unwrap().clone();
+
+        let evaluator = Evaluator {};
+        let evaluated_obj = evaluator.eval(node);
+
+        assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
+    })
+}
