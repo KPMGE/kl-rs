@@ -26,7 +26,10 @@ jobs:
 
       - name: Lint
         run: |
-          cd kl-rs
+          echo "current directory"
+          pwd
+          ls
+          # cd kl-rs
           cargo fmt -- --check
           cargo clippy -- -D warnings          
 
