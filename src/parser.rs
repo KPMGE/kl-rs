@@ -129,14 +129,13 @@ impl Parser {
         let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
         let left_expression = prefix_parse_fn(self)?;
 
-        let is_next_token_precedence_higher = precedence <= self.next_token.precedence();
+        let is_next_token_precedence_higher = precedence < self.next_token.precedence();
 
         while !self.expect_current_token(Token::Semicolon) && is_next_token_precedence_higher {
             if let Some(infix_parse_fn) = self.next_token.get_infix_parse_fn() {
                 self.advance_tokens();
                 return infix_parse_fn(self, left_expression);
             }
-            break;
         }
 
         Some(left_expression)
@@ -399,7 +398,7 @@ impl Parser {
     }
 
     fn report_error(&mut self, message: &str) {
-        self.errors.push(format!("{}", message))
+        self.errors.push(message.to_string())
     }
 }
 

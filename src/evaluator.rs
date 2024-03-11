@@ -1,5 +1,7 @@
 use crate::ast::{AstNode, Expression};
 use crate::token::Token;
+
+#[derive(Default)]
 pub struct Evaluator {}
 
 #[derive(Debug, PartialEq)]
@@ -11,7 +13,7 @@ pub enum Object {
 
 impl Evaluator {
     pub fn new() -> Self {
-        Evaluator {}
+        Evaluator::default()
     }
 
     pub fn eval(&self, node: AstNode) -> Object {
@@ -121,7 +123,7 @@ impl Object {
         match self {
             Object::Integer(value) => format!("{value}"),
             Object::Boolean(value) => format!("{value}"),
-            Object::Null => format!("null"),
+            Object::Null => "null".to_string(),
         }
     }
 
