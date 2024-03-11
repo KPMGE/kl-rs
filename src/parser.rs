@@ -261,7 +261,7 @@ impl Parser {
 
         Some(Expression::IfExpression {
             token: Token::If,
-            condition: Box::new(condition),
+            condition: Box::new(AstNode::Expression(condition)),
             consequence,
             alternative,
         })

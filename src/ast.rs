@@ -23,7 +23,7 @@ pub enum Expression {
     },
     IfExpression {
         token: Token, // Token::If
-        condition: Box<Expression>,
+        condition: Box<AstNode>,
         consequence: BlockStatement,         // Statement::BlockStatement
         alternative: Option<BlockStatement>, // Statement::BlockStatement
     },

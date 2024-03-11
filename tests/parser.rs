@@ -311,7 +311,7 @@ fn given_an_if_expression_it_should_parse_correctly() {
 
     let expected_expression = Expression::IfExpression {
         token: Token::If,
-        condition: Box::new(Expression::Infix {
+        condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier {
                 token: Token::Identifier("x".to_string()),
@@ -319,7 +319,7 @@ fn given_an_if_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier {
                 token: Token::Identifier("y".to_string()),
             }),
-        }),
+        })),
         consequence: BlockStatement {
             token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Identifier {
@@ -354,7 +354,7 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
 
     let expected_expression = Expression::IfExpression {
         token: Token::If,
-        condition: Box::new(Expression::Infix {
+        condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier {
                 token: Token::Identifier("x".to_string()),
@@ -362,7 +362,7 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier {
                 token: Token::Identifier("y".to_string()),
             }),
-        }),
+        })),
         consequence: BlockStatement {
             token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Identifier {
