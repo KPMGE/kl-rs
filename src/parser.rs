@@ -136,7 +136,7 @@ impl Parser {
                 self.advance_tokens();
                 return infix_parse_fn(self, left_expression);
             }
-            break
+            break;
         }
 
         Some(left_expression)

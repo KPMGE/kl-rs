@@ -22,8 +22,8 @@ impl Lexer {
 
     pub fn next_token(&mut self) -> Token {
         let keywords_map = HashMap::from([
-            ("fn", Token::Function), 
-            ("let", Token::Let), 
+            ("fn", Token::Function),
+            ("let", Token::Let),
             ("if", Token::If),
             ("else", Token::Else),
             ("true", Token::True),
@@ -52,23 +52,19 @@ impl Lexer {
             ',' => Token::Comma,
             '/' => Token::Slash,
             ';' => Token::Semicolon,
-            '=' => {
-                match self.peek_char(self.read_position) {
-                    Some('=') => {
-                        self.read_char();
-                        Token::Equals
-                    },
-                    _ => Token::Assign 
+            '=' => match self.peek_char(self.read_position) {
+                Some('=') => {
+                    self.read_char();
+                    Token::Equals
                 }
+                _ => Token::Assign,
             },
-            '!' => {
-                match self.peek_char(self.read_position) {
-                    Some('=') => { 
-                        self.read_char();
-                        Token::NotEquals
-                    },
-                    _ => Token::Bang 
+            '!' => match self.peek_char(self.read_position) {
+                Some('=') => {
+                    self.read_char();
+                    Token::NotEquals
                 }
+                _ => Token::Bang,
             },
             c => {
                 if c.is_letter() {
@@ -76,8 +72,8 @@ impl Lexer {
                     return match keywords_map.get(&identifier.as_str()) {
                         Some(tok) => tok.clone(),
                         None => Token::Identifier(identifier),
-                    }
-                } 
+                    };
+                }
 
                 if c.is_ascii_digit() {
                     let num = self.read_number();
@@ -87,7 +83,7 @@ impl Lexer {
                 Token::Illegal
             }
         };
-        
+
         self.read_char();
         token
     }
@@ -98,13 +94,13 @@ impl Lexer {
         while let Some(c) = self.current_char {
             if c.is_ascii_digit() {
                 self.read_char();
-                continue
+                continue;
             }
-            break
+            break;
         }
 
         self.input[start_pos..self.current_position].to_string()
-   }
+    }
 
     fn read_identifier(&mut self) -> String {
         let start_pos = self.current_position;
@@ -112,9 +108,9 @@ impl Lexer {
         while let Some(c) = self.current_char {
             if c.is_letter() {
                 self.read_char();
-                continue
+                continue;
             }
-            break
+            break;
         }
 
         let identifier = &self.input[start_pos..self.current_position];
@@ -142,12 +138,11 @@ impl Lexer {
         while let Some(c) = self.current_char {
             if c.is_whitespace() {
                 self.read_char();
-                continue
+                continue;
             }
-            break
+            break;
         }
     }
-
 }
 
 trait IsLetter {

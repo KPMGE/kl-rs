@@ -19,7 +19,7 @@ pub enum Expression {
     },
     Boolean {
         token: Token, // Token::True or Token::False
-        value: bool
+        value: bool,
     },
     IfExpression {
         token: Token, // Token::If
@@ -73,7 +73,5 @@ pub enum Precedence {
 pub enum AstNode {
     Statement(Statement),
     Expression(Expression),
-    Program {
-        statements: Vec<AstNode>
-    }
+    Program { statements: Vec<AstNode> },
 }
