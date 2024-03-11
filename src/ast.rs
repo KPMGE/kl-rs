@@ -72,5 +72,8 @@ pub enum Precedence {
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum AstNode {
     Statement(Statement),
-    Expression(Expression)
+    Expression(Expression),
+    Program {
+        statements: Vec<AstNode>
+    }
 }

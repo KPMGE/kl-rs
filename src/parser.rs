@@ -4,11 +4,6 @@ use crate::{
     token::Token,
 };
 
-#[derive(Debug, PartialEq)]
-pub struct Program {
-    pub statements: Vec<AstNode>,
-}
-
 #[derive(Debug)]
 pub struct Parser {
     pub errors: Vec<String>,
@@ -30,28 +25,31 @@ impl Parser {
         }
     }
 
-    pub fn parse_program(&mut self) -> Program {
-        let mut program = Program {
+    pub fn parse_program(&mut self) -> AstNode {
+        let mut program = AstNode::Program {
             statements: Vec::new(),
         };
 
         while self.current_token != Token::Eof {
-            match self.current_token {
-                Token::Let => {
-                    if let Some(statement) = self.parse_let_statement() {
-                        program.statements.push(statement);
+            match program {
+                AstNode::Program { ref mut statements } => match self.current_token {
+                    Token::Let => {
+                        if let Some(statement) = self.parse_let_statement() {
+                            statements.push(statement);
+                        }
                     }
-                }
-                Token::Return => {
-                    if let Some(statement) = self.parse_return_statement() {
-                        program.statements.push(statement);
+                    Token::Return => {
+                        if let Some(statement) = self.parse_return_statement() {
+                            statements.push(statement);
+                        }
                     }
-                }
-                _ => {
-                    if let Some(statement) = self.parse_expression_statement() {
-                        program.statements.push(statement);
+                    _ => {
+                        if let Some(statement) = self.parse_expression_statement() {
+                            statements.push(statement);
+                        }
                     }
-                }
+                },
+                _ => panic!("Expected AstNode::Program"),
             }
 
             self.advance_tokens();
@@ -138,6 +136,7 @@ impl Parser {
                 self.advance_tokens();
                 return infix_parse_fn(self, left_expression);
             }
+            break
         }
 
         Some(left_expression)

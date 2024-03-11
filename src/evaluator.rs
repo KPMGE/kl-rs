@@ -16,6 +16,9 @@ impl Evaluator {
 
     pub fn eval(&self, node: AstNode) -> Object {
         match node {
+            AstNode::Program { statements } => {
+                self.eval_statements(statements)
+            }
             AstNode::Expression(expression) => match expression {
                 Expression::Int {
                     token: Token::Int(value),
@@ -38,6 +41,16 @@ impl Evaluator {
             },
             AstNode::Statement(_) => todo!(),
         }
+    }
+
+    fn eval_statements(&self, statements: Vec<AstNode>) -> Object {
+        let mut result = Object::Null;
+
+        statements.iter().for_each(|statement| {
+            result = self.eval(statement.clone());
+        });
+
+        result
     }
 
     fn eval_prefix_expression(&self, operator: Token, right: Object) -> Object {

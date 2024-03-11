@@ -1,9 +1,8 @@
 use kl_rs::evaluator::{Object, Evaluator};
 use kl_rs::{
-    ast::{AstNode, BlockStatement, Expression, Statement},
+    ast::AstNode,
     lexer::Lexer,
     parser::Parser,
-    token::Token,
 };
 
 #[test]
@@ -15,7 +14,10 @@ fn given_an_integer_expression_it_should_evaluate_to_the_right_object() {
         let lexer = Lexer::new(code.to_string());
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
-        let node = parsed_program.statements.first().unwrap().clone();
+        let node = match parsed_program {
+            AstNode::Program { statements } => statements.first().unwrap().clone(),
+            _ => panic!("Unexpected AstNode!")
+        };
 
         let evaluator = Evaluator {};
         let evaluated_obj = evaluator.eval(node);
@@ -33,7 +35,10 @@ fn given_boolean_expressions_it_should_evaluate_to_the_right_object() {
         let lexer = Lexer::new(code.to_string());
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
-        let node = parsed_program.statements.first().unwrap().clone();
+        let node = match parsed_program {
+            AstNode::Program { statements } => statements.first().unwrap().clone(),
+            _ => panic!("Unexpected AstNode!")
+        };
 
         let evaluator = Evaluator {};
         let evaluated_obj = evaluator.eval(node);
@@ -57,7 +62,10 @@ fn given_prefix_expressions_it_should_evaluate_correctly() {
         let lexer = Lexer::new(code.to_string());
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
-        let node = parsed_program.statements.first().unwrap().clone();
+        let node = match parsed_program {
+            AstNode::Program { statements } => statements.first().unwrap().clone(),
+            _ => panic!("Unexpected AstNode!")
+        };
 
         let evaluator = Evaluator {};
         let evaluated_obj = evaluator.eval(node);
