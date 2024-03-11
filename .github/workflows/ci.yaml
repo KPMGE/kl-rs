@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  test_program:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Update local toolchain
+        run: |
+          rustup update
+          rustup component add clippy
+          rustup install nightly          
+
+      - name: Toolchain info
+        run: |
+          cargo --version --verbose
+          rustc --version
+          cargo clippy --version          
+
+      - name: Lint
+        run: |
+          cd phaser
+          cargo fmt -- --check
+          cargo clippy -- -D warnings          
+
+      - name: Test
+        run: |
+          cd kl-rs
+          cargo check
+          cargo test --all          
