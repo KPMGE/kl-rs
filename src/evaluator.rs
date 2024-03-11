@@ -16,6 +16,7 @@ impl Evaluator {
 
     pub fn eval(&self, node: AstNode) -> Object {
         match node {
+            AstNode::Program { statements } => self.eval_statements(statements),
             AstNode::Expression(expression) => match expression {
                 Expression::Int {
                     token: Token::Int(value),
@@ -34,10 +35,38 @@ impl Evaluator {
                     let right = self.eval(AstNode::Expression(*right));
                     self.eval_infix_expression(left, right, operator)
                 }
+                Expression::IfExpression {
+                    condition,
+                    consequence,
+                    alternative,
+                    ..
+                } => {
+                    let condition = self.eval(*condition);
+
+                    if condition.is_truthy() {
+                        return self.eval_statements(consequence.statements);
+                    }
+
+                    if let Some(alternative_block) = alternative {
+                        return self.eval_statements(alternative_block.statements);
+                    }
+
+                    Object::Null
+                }
                 _ => todo!(),
             },
             AstNode::Statement(_) => todo!(),
         }
+    }
+
+    fn eval_statements(&self, statements: Vec<AstNode>) -> Object {
+        let mut result = Object::Null;
+
+        statements.iter().for_each(|statement| {
+            result = self.eval(statement.clone());
+        });
+
+        result
     }
 
     fn eval_prefix_expression(&self, operator: Token, right: Object) -> Object {
@@ -93,6 +122,14 @@ impl Object {
             Object::Integer(value) => format!("{value}"),
             Object::Boolean(value) => format!("{value}"),
             Object::Null => format!("null"),
+        }
+    }
+
+    fn is_truthy(&self) -> bool {
+        match self {
+            Object::Integer(0) => false,
+            Object::Boolean(true) | Object::Integer(..) => true,
+            _ => false,
         }
     }
 }

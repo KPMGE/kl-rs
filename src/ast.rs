@@ -23,7 +23,7 @@ pub enum Expression {
     },
     IfExpression {
         token: Token, // Token::If
-        condition: Box<Expression>,
+        condition: Box<AstNode>,
         consequence: BlockStatement,         // Statement::BlockStatement
         alternative: Option<BlockStatement>, // Statement::BlockStatement
     },
@@ -72,5 +72,8 @@ pub enum Precedence {
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum AstNode {
     Statement(Statement),
-    Expression(Expression)
+    Expression(Expression),
+    Program {
+        statements: Vec<AstNode>
+    }
 }

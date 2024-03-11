@@ -4,11 +4,6 @@ use crate::{
     token::Token,
 };
 
-#[derive(Debug, PartialEq)]
-pub struct Program {
-    pub statements: Vec<AstNode>,
-}
-
 #[derive(Debug)]
 pub struct Parser {
     pub errors: Vec<String>,
@@ -30,28 +25,31 @@ impl Parser {
         }
     }
 
-    pub fn parse_program(&mut self) -> Program {
-        let mut program = Program {
+    pub fn parse_program(&mut self) -> AstNode {
+        let mut program = AstNode::Program {
             statements: Vec::new(),
         };
 
         while self.current_token != Token::Eof {
-            match self.current_token {
-                Token::Let => {
-                    if let Some(statement) = self.parse_let_statement() {
-                        program.statements.push(statement);
+            match program {
+                AstNode::Program { ref mut statements } => match self.current_token {
+                    Token::Let => {
+                        if let Some(statement) = self.parse_let_statement() {
+                            statements.push(statement);
+                        }
                     }
-                }
-                Token::Return => {
-                    if let Some(statement) = self.parse_return_statement() {
-                        program.statements.push(statement);
+                    Token::Return => {
+                        if let Some(statement) = self.parse_return_statement() {
+                            statements.push(statement);
+                        }
                     }
-                }
-                _ => {
-                    if let Some(statement) = self.parse_expression_statement() {
-                        program.statements.push(statement);
+                    _ => {
+                        if let Some(statement) = self.parse_expression_statement() {
+                            statements.push(statement);
+                        }
                     }
-                }
+                },
+                _ => panic!("Expected AstNode::Program"),
             }
 
             self.advance_tokens();
@@ -131,13 +129,14 @@ impl Parser {
         let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
         let left_expression = prefix_parse_fn(self)?;
 
-        let is_next_token_precedence_higher = precedence < self.next_token.precedence();
+        let is_next_token_precedence_higher = precedence <= self.next_token.precedence();
 
         while !self.expect_current_token(Token::Semicolon) && is_next_token_precedence_higher {
             if let Some(infix_parse_fn) = self.next_token.get_infix_parse_fn() {
                 self.advance_tokens();
                 return infix_parse_fn(self, left_expression);
             }
+            break
         }
 
         Some(left_expression)
@@ -262,7 +261,7 @@ impl Parser {
 
         Some(Expression::IfExpression {
             token: Token::If,
-            condition: Box::new(condition),
+            condition: Box::new(AstNode::Expression(condition)),
             consequence,
             alternative,
         })

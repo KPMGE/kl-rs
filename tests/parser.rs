@@ -20,29 +20,31 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 3);
     assert_eq!(parser.errors.len(), 0);
 
-    parsed_program
-        .statements
-        .iter()
-        .enumerate()
-        .for_each(|(idx, statement)| {
-            let expected_identifier = expected_identifiers.get(idx).unwrap();
-            let expected_int = expected_ints.get(idx).unwrap();
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 3);
 
-            let expected_statement = AstNode::Statement(Statement::LetStatement {
-                token: Token::Let,
-                name: Expression::Identifier {
-                    token: Token::Identifier(expected_identifier.to_string()),
-                },
-                value: Expression::Int {
-                    token: Token::Int(expected_int.to_string()),
-                },
-            });
+            statements.iter().enumerate().for_each(|(idx, statement)| {
+                let expected_identifier = expected_identifiers.get(idx).unwrap();
+                let expected_int = expected_ints.get(idx).unwrap();
 
-            assert_eq!(*statement, expected_statement);
-        })
+                let expected_statement = AstNode::Statement(Statement::LetStatement {
+                    token: Token::Let,
+                    name: Expression::Identifier {
+                        token: Token::Identifier(expected_identifier.to_string()),
+                    },
+                    value: Expression::Int {
+                        token: Token::Int(expected_int.to_string()),
+                    },
+                });
+
+                assert_eq!(*statement, expected_statement);
+            })
+        }
+        _ => panic!("Unexpected AstNode!"),
+    }
 }
 
 #[test]
@@ -59,26 +61,28 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 3);
     assert_eq!(parser.errors.len(), 0);
 
-    parsed_program
-        .statements
-        .iter()
-        .enumerate()
-        .for_each(|(idx, statement)| {
-            let expected_int = expected_ints.get(idx).unwrap();
-            let expected_expression = Expression::Int {
-                token: Token::Int(expected_int.to_string()),
-            };
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 3);
 
-            let expected_statement = AstNode::Statement(Statement::ReturnStatement {
-                token: Token::Return,
-                value: expected_expression,
-            });
+            statements.iter().enumerate().for_each(|(idx, statement)| {
+                let expected_int = expected_ints.get(idx).unwrap();
+                let expected_expression = Expression::Int {
+                    token: Token::Int(expected_int.to_string()),
+                };
 
-            assert_eq!(*statement, expected_statement);
-        })
+                let expected_statement = AstNode::Statement(Statement::ReturnStatement {
+                    token: Token::Return,
+                    value: expected_expression,
+                });
+
+                assert_eq!(*statement, expected_statement);
+            })
+        }
+        _ => panic!("Unexpected AstNode!"),
+    }
 }
 
 #[test]
@@ -90,20 +94,25 @@ fn given_a_variable_name_it_should_parse_correctly() {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 1);
     assert_eq!(parser.errors.len(), 0);
 
-    let statement = parsed_program.statements.first().unwrap();
-    match statement {
-        AstNode::Expression(expression) => {
-            assert_eq!(
-                *expression,
-                Expression::Identifier {
-                    token: Token::Identifier("foo".to_string())
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
+
+            match statements.first().unwrap() {
+                AstNode::Expression(expression) => {
+                    assert_eq!(
+                        *expression,
+                        Expression::Identifier {
+                            token: Token::Identifier("foo".to_string())
+                        }
+                    );
                 }
-            );
+                _ => panic!("wrong statement!"),
+            }
         }
-        _ => panic!("wrong statement!"),
+        _ => panic!("Unexpected AstNode!"),
     }
 }
 
@@ -116,20 +125,26 @@ fn given_a_number_expression_it_should_parse_correctly() {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 1);
     assert_eq!(parser.errors.len(), 0);
 
-    let statement = parsed_program.statements.first().unwrap();
-    match statement {
-        AstNode::Expression(expression) => {
-            assert_eq!(
-                *expression,
-                Expression::Int {
-                    token: Token::Int("5".to_string())
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
+
+            let statement = statements.first().unwrap();
+            match statement {
+                AstNode::Expression(expression) => {
+                    assert_eq!(
+                        *expression,
+                        Expression::Int {
+                            token: Token::Int("5".to_string())
+                        }
+                    );
                 }
-            );
+                _ => panic!("wrong statement!"),
+            }
         }
-        _ => panic!("wrong statement!"),
+        _ => panic!("Unexpected AstNode!"),
     }
 }
 
@@ -148,30 +163,35 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 2);
     assert_eq!(parser.errors.len(), 0);
 
-    parsed_program
-        .statements
-        .iter()
-        .enumerate()
-        .for_each(|(idx, statement)| match statement {
-            AstNode::Expression(expression) => {
-                let expected_operator = expected_operators.get(idx).unwrap();
-                let expected_right_expression = Expression::Int {
-                    token: Token::Int(expected_values.get(idx).unwrap().to_string()),
-                };
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 2);
 
-                match expression {
-                    Expression::Prefix { operator, right } => {
-                        assert_eq!(operator, expected_operator);
-                        assert_eq!(*right, Box::new(expected_right_expression));
+            statements
+                .iter()
+                .enumerate()
+                .for_each(|(idx, statement)| match statement {
+                    AstNode::Expression(expression) => {
+                        let expected_operator = expected_operators.get(idx).unwrap();
+                        let expected_right_expression = Expression::Int {
+                            token: Token::Int(expected_values.get(idx).unwrap().to_string()),
+                        };
+
+                        match expression {
+                            Expression::Prefix { operator, right } => {
+                                assert_eq!(operator, expected_operator);
+                                assert_eq!(*right, Box::new(expected_right_expression));
+                            }
+                            _ => panic!(),
+                        }
                     }
                     _ => panic!(),
-                }
-            }
-            _ => panic!(),
-        })
+                })
+        }
+        _ => panic!("Unexpected AstNode!"),
+    }
 }
 
 #[test]
@@ -263,14 +283,20 @@ fn given_a_grouped_expression_it_should_parse_correctly() {
 
         assert_eq!(parser.errors.len(), 0);
 
-        let expression = match parsed_program.statements.first().unwrap() {
-            AstNode::Expression(exp) => exp,
-            _ => panic!("Unexpected expression!"),
+        let expression = match parsed_program {
+            AstNode::Program { ref statements } => match statements.first().unwrap() {
+                AstNode::Expression(exp) => exp,
+                _ => panic!("Unexpected expression!"),
+            },
+            _ => panic!("Unexpected AstNode!"),
         };
 
-        let expected_expression = match expected_parsed_program.statements.first().unwrap() {
-            AstNode::Expression(exp) => exp,
-            _ => panic!("Unexpected expression!"),
+        let expected_expression = match expected_parsed_program {
+            AstNode::Program { ref statements } => match statements.first().unwrap() {
+                AstNode::Expression(exp) => exp,
+                _ => panic!("Unexpected expression!"),
+            },
+            _ => panic!("Unexpected AstNode!"),
         };
 
         assert_eq!(expression, expected_expression);
@@ -285,7 +311,7 @@ fn given_an_if_expression_it_should_parse_correctly() {
 
     let expected_expression = Expression::IfExpression {
         token: Token::If,
-        condition: Box::new(Expression::Infix {
+        condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier {
                 token: Token::Identifier("x".to_string()),
@@ -293,7 +319,7 @@ fn given_an_if_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier {
                 token: Token::Identifier("y".to_string()),
             }),
-        }),
+        })),
         consequence: BlockStatement {
             token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Identifier {
@@ -305,14 +331,18 @@ fn given_an_if_expression_it_should_parse_correctly() {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 1);
     assert_eq!(parser.errors.len(), 0);
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
 
-    let statement = parsed_program.statements.first().unwrap();
-
-    match statement {
-        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
-        _ => panic!("Unexpected statement!"),
+            let statement = statements.first().unwrap();
+            match statement {
+                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                _ => panic!("Unexpected statement!"),
+            }
+        }
+        _ => panic!("Unexpeced AstNode!"),
     }
 }
 
@@ -324,7 +354,7 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
 
     let expected_expression = Expression::IfExpression {
         token: Token::If,
-        condition: Box::new(Expression::Infix {
+        condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier {
                 token: Token::Identifier("x".to_string()),
@@ -332,7 +362,7 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier {
                 token: Token::Identifier("y".to_string()),
             }),
-        }),
+        })),
         consequence: BlockStatement {
             token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Identifier {
@@ -349,14 +379,19 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 1);
     assert_eq!(parser.errors.len(), 0);
 
-    let statement = parsed_program.statements.first().unwrap();
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
 
-    match statement {
-        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
-        _ => panic!("Unexpected statement!"),
+            let statement = statements.first().unwrap();
+            match statement {
+                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                _ => panic!("Unexpected statement!"),
+            }
+        }
+        _ => panic!("Unexpected AstNode!"),
     }
 }
 
@@ -387,28 +422,26 @@ fn given_a_function_expression_it_should_parse_correctly() {
     let mut parser = Parser::new(lexer);
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 1);
     assert_eq!(parser.errors.len(), 0);
 
-    let statement = parsed_program.statements.first().unwrap();
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
 
-    match statement {
-        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
-        _ => panic!("Unexpected expression!"),
+            let statement = statements.first().unwrap();
+
+            match statement {
+                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                _ => panic!("Unexpected expression!"),
+            }
+        }
+        _ => panic!("Unexpected AstNode!"),
     }
 }
 
 #[test]
 fn given_a_call_expression_it_should_parse_correctly() {
     let code = "add(2 * 3, 1 + 4);";
-
-    let lexer = Lexer::new(code.to_string());
-    let mut parser = Parser::new(lexer);
-
-    let parsed_program = parser.parse_program();
-
-    assert_eq!(parsed_program.statements.len(), 1);
-    assert_eq!(parser.errors.len(), 0);
 
     let expected_expression = Expression::CallExpression {
         token: Token::LeftParentesis,
@@ -437,11 +470,24 @@ fn given_a_call_expression_it_should_parse_correctly() {
         ],
     };
 
-    let statement = parsed_program.statements.first().unwrap();
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
 
-    match statement {
-        AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
-        _ => panic!("Unexpected statement!"),
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parser.errors.len(), 0);
+
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
+
+            let statement = statements.first().unwrap();
+            match statement {
+                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                _ => panic!("Unexpected statement!"),
+            }
+        }
+        _ => panic!("Unexpected AstNode!"),
     }
 }
 
@@ -451,14 +497,20 @@ fn assert_boolean_expression(code: &str, expected_expression: &Expression) {
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 1);
     assert_eq!(parser.errors.len(), 0);
 
-    let statement = parsed_program.statements.first().unwrap();
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
 
-    match statement {
-        AstNode::Expression(expression) => assert_eq!(expression, expected_expression),
-        _ => panic!("Unexpected statement!"),
+            let statement = statements.first().unwrap();
+
+            match statement {
+                AstNode::Expression(expression) => assert_eq!(expression, expected_expression),
+                _ => panic!("Unexpected statement!"),
+            }
+        }
+        _ => panic!("Unexpected AstNode!"),
     }
 }
 
@@ -468,30 +520,35 @@ fn assert_infix_expression(code: &str, expected_operator: Token, expected_litera
 
     let parsed_program = parser.parse_program();
 
-    assert_eq!(parsed_program.statements.len(), 1);
     assert_eq!(parser.errors.len(), 0);
 
-    let statement = parsed_program.statements.first().unwrap();
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
 
-    match statement {
-        AstNode::Expression(expression) => {
-            let expected_left_value = expected_literals.0;
-            let expected_right_value = expected_literals.1;
-            let expected_left_exp = Expression::Int {
-                token: Token::Int(expected_left_value.to_string()),
-            };
-            let expected_right_exp = Expression::Int {
-                token: Token::Int(expected_right_value.to_string()),
-            };
+            let statement = statements.first().unwrap();
+            match statement {
+                AstNode::Expression(expression) => {
+                    let expected_left_value = expected_literals.0;
+                    let expected_right_value = expected_literals.1;
+                    let expected_left_exp = Expression::Int {
+                        token: Token::Int(expected_left_value.to_string()),
+                    };
+                    let expected_right_exp = Expression::Int {
+                        token: Token::Int(expected_right_value.to_string()),
+                    };
 
-            let expected_expression = Expression::Infix {
-                operator: expected_operator,
-                left: Box::new(expected_left_exp),
-                right: Box::new(expected_right_exp),
-            };
+                    let expected_expression = Expression::Infix {
+                        operator: expected_operator,
+                        left: Box::new(expected_left_exp),
+                        right: Box::new(expected_right_exp),
+                    };
 
-            assert_eq!(*expression, expected_expression);
+                    assert_eq!(*expression, expected_expression);
+                }
+                _ => panic!(),
+            }
         }
-        _ => panic!(),
+        _ => panic!("Unexpected AstNode!"),
     }
 }

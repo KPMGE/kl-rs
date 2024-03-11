@@ -44,8 +44,10 @@ fn main() {
         let program = parser.parse_program();
 
         println!("Parsed program: ");
-        for statement in program.statements.iter() {
-            println!("statement: {:#?}", statement);
+        if let kl_rs::ast::AstNode::Program { ref statements } = program {
+            for statement in statements {
+                println!("statement: {:#?}", statement);
+            }
         }
         println!();
 
@@ -57,9 +59,7 @@ fn main() {
 
         println!("EVALUATED: ");
         let evaluator = Evaluator::new();
-        for statement in program.statements {
-            let object = evaluator.eval(statement);
-            println!("{}", object.inspect());
-        }
+        let object = evaluator.eval(program);
+        println!("{}", object.inspect());
     }
 }
