@@ -104,3 +104,30 @@ fn given_if_else_expressions_it_should_evaluate_correctly() {
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
     })
 }
+
+#[test]
+fn given_return_statements_it_should_evaluate_correctly() {
+    let test_codes = vec![
+        "if (true) { if (true) { return 10; }}; 20;",
+        "return 20; 10;",
+    ];
+    let expected_objects = vec![
+        Object::Return(Box::new(Object::Integer(10))),
+        Object::Return(Box::new(Object::Integer(20))),
+    ];
+
+    test_codes.iter().enumerate().for_each(|(idx, code)| {
+        let lexer = Lexer::new(code.to_string());
+        let mut parser = Parser::new(lexer);
+        let parsed_program = parser.parse_program();
+        let node = match parsed_program {
+            AstNode::Program { statements } => statements.first().unwrap().clone(),
+            _ => panic!("Unexpected AstNode!"),
+        };
+
+        let evaluator = Evaluator::new();
+        let evaluated_obj = evaluator.eval(node);
+
+        assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
+    })
+}

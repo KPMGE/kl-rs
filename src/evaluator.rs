@@ -1,13 +1,14 @@
-use crate::ast::{AstNode, Expression};
+use crate::ast::{AstNode, Expression, Statement};
 use crate::token::Token;
 
 #[derive(Default)]
 pub struct Evaluator {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Object {
     Integer(i32),
     Boolean(bool),
+    Return(Box<Object>),
     Null,
 }
 
@@ -18,7 +19,14 @@ impl Evaluator {
 
     pub fn eval(&self, node: AstNode) -> Object {
         match node {
-            AstNode::Program { statements } => self.eval_statements(statements),
+            AstNode::Program { statements } => self.eval_program(statements),
+            AstNode::Statement(statement) => match statement {
+                Statement::ReturnStatement { value, .. } => {
+                    let result_object = self.eval(AstNode::Expression(value));
+                    Object::Return(Box::new(result_object))
+                }
+                Statement::LetStatement { .. } => todo!(),
+            },
             AstNode::Expression(expression) => match expression {
                 Expression::Int {
                     token: Token::Int(value),
@@ -46,31 +54,45 @@ impl Evaluator {
                     let condition = self.eval(*condition);
 
                     if condition.is_truthy() {
-                        return self.eval_statements(consequence.statements);
+                        return self.eval_block_statement(consequence.statements);
                     }
 
                     if let Some(alternative_block) = alternative {
-                        return self.eval_statements(alternative_block.statements);
+                        return self.eval_block_statement(alternative_block.statements);
                     }
 
                     Object::Null
                 }
                 _ => todo!(),
             },
-            AstNode::Statement(_) => todo!(),
         }
     }
 
-    fn eval_statements(&self, statements: Vec<AstNode>) -> Object {
+    fn eval_program(&self, statements: Vec<AstNode>) -> Object {
         let mut result = Object::Null;
 
-        statements.iter().for_each(|statement| {
+        for statement in statements {
             result = self.eval(statement.clone());
-        });
+            if let Object::Return(return_value) = result {
+                return Object::Return(return_value);
+            }
+        }
 
         result
     }
 
+    fn eval_block_statement(&self, statements: Vec<AstNode>) -> Object {
+        let mut result = Object::Null;
+
+        for statement in statements {
+            result = self.eval(statement);
+            if let Object::Return(return_value) = result {
+                return Object::Return(return_value);
+            }
+        }
+
+        result
+    }
     fn eval_prefix_expression(&self, operator: Token, right: Object) -> Object {
         match operator {
             Token::Bang => self.eval_bang_expression(right),
@@ -123,6 +145,7 @@ impl Object {
         match self {
             Object::Integer(value) => format!("{value}"),
             Object::Boolean(value) => format!("{value}"),
+            Object::Return(value) => value.inspect(),
             Object::Null => "null".to_string(),
         }
     }
