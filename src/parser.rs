@@ -179,7 +179,7 @@ impl Parser {
 
     fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
         let operator = self.current_token.clone();
-        let precedence = self.current_token.precedence();
+        let precedence = self.next_token.precedence();
 
         self.advance_tokens();
 
