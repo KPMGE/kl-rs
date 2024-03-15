@@ -5,6 +5,7 @@ use kl_rs::{evaluator::Evaluator, lexer::Lexer, parser::Parser, token::Token};
 fn main() {
     let stdin = std::io::stdin();
     let mut handle = stdin.lock();
+    let mut evaluator = Evaluator::new();
 
     loop {
         let mut input = String::new();
@@ -58,7 +59,6 @@ fn main() {
         println!();
 
         println!("EVALUATED: ");
-        let evaluator = Evaluator::new();
         let object = evaluator.eval(program);
         println!("{}", object.inspect());
     }

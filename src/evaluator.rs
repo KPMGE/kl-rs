@@ -1,8 +1,11 @@
 use crate::ast::{AstNode, Expression, Statement};
+use std::collections::HashMap;
 use crate::token::Token;
 
 #[derive(Default)]
-pub struct Evaluator {}
+pub struct Evaluator {
+    context: HashMap<String, Object> 
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Object {
@@ -14,10 +17,12 @@ pub enum Object {
 
 impl Evaluator {
     pub fn new() -> Self {
-        Evaluator::default()
+        Evaluator {
+            context: HashMap::new()
+        }
     }
 
-    pub fn eval(&self, node: AstNode) -> Object {
+    pub fn eval(&mut self, node: AstNode) -> Object {
         match node {
             AstNode::Program { statements } => self.eval_program(statements),
             AstNode::Statement(statement) => match statement {
@@ -25,7 +30,16 @@ impl Evaluator {
                     let result_object = self.eval(AstNode::Expression(value));
                     Object::Return(Box::new(result_object))
                 }
-                Statement::LetStatement { .. } => todo!(),
+                Statement::LetStatement { name, value, .. } => {
+                    let let_name = match name {
+                        Expression::Identifier { token: Token::Identifier(str) } => str,
+                        _ => panic!()
+                    };
+
+                    let result_object = self.eval(AstNode::Expression(value));
+                    self.context.insert(let_name.clone(), result_object.clone());
+                    result_object
+                },
             },
             AstNode::Expression(expression) => match expression {
                 Expression::Int {
@@ -62,13 +76,16 @@ impl Evaluator {
                     }
 
                     Object::Null
+                },
+                Expression::Identifier { token: Token::Identifier(let_name) } => {
+                    self.context.get(&let_name).expect("ERROR: Could not find identifer").clone()
                 }
                 _ => todo!(),
             },
         }
     }
 
-    fn eval_program(&self, statements: Vec<AstNode>) -> Object {
+    fn eval_program(&mut self, statements: Vec<AstNode>) -> Object {
         let mut result = Object::Null;
 
         for statement in statements {
@@ -81,7 +98,7 @@ impl Evaluator {
         result
     }
 
-    fn eval_block_statement(&self, statements: Vec<AstNode>) -> Object {
+    fn eval_block_statement(&mut self, statements: Vec<AstNode>) -> Object {
         let mut result = Object::Null;
 
         for statement in statements {
