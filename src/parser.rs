@@ -4,7 +4,7 @@ use crate::{
     token::Token,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Parser {
     pub errors: Vec<String>,
     lexer: Lexer,
