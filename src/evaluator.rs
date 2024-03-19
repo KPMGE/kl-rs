@@ -1,10 +1,10 @@
-use crate::ast::{AstNode, Expression, Statement};
-use std::collections::HashMap;
+use crate::ast::{AstNode, BlockStatement, Expression, Statement};
 use crate::token::Token;
+use std::collections::HashMap;
 
 #[derive(Default)]
 pub struct Evaluator {
-    context: HashMap<String, Object> 
+    context: HashMap<String, Object>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -12,13 +12,18 @@ pub enum Object {
     Integer(i32),
     Boolean(bool),
     Return(Box<Object>),
+    Function {
+        parameters: Vec<Token>, // Token::Identifier
+        body: BlockStatement,
+        scope: HashMap<String, Object>,
+    },
     Null,
 }
 
 impl Evaluator {
     pub fn new() -> Self {
         Evaluator {
-            context: HashMap::new()
+            context: HashMap::new(),
         }
     }
 
@@ -32,14 +37,16 @@ impl Evaluator {
                 }
                 Statement::LetStatement { name, value, .. } => {
                     let let_name = match name {
-                        Expression::Identifier { token: Token::Identifier(str) } => str,
-                        _ => panic!()
+                        Expression::Identifier {
+                            token: Token::Identifier(str),
+                        } => str,
+                        _ => panic!(),
                     };
 
                     let result_object = self.eval(AstNode::Expression(value));
                     self.context.insert(let_name.clone(), result_object.clone());
                     result_object
-                },
+                }
             },
             AstNode::Expression(expression) => match expression {
                 Expression::Int {
@@ -76,13 +83,71 @@ impl Evaluator {
                     }
 
                     Object::Null
+                }
+                Expression::Identifier {
+                    token: Token::Identifier(let_name),
+                } => self
+                    .context
+                    .get(&let_name)
+                    .expect("ERROR: Could not find identifer")
+                    .clone(),
+                Expression::FunctionExpression {
+                    parameters, body, ..
+                } => Object::Function {
+                    parameters,
+                    body,
+                    scope: HashMap::new(),
                 },
-                Expression::Identifier { token: Token::Identifier(let_name) } => {
-                    self.context.get(&let_name).expect("ERROR: Could not find identifer").clone()
+                Expression::CallExpression {
+                    function,
+                    arguments,
+                    ..
+                } => {
+                    let function = self.eval(AstNode::Expression(*function));
+
+                    match function {
+                        Object::Function {
+                            parameters,
+                            body,
+                            mut scope,
+                        } => {
+                            let previous_context = self.context.clone();
+
+                            let arguments = self.eval_expressions(arguments);
+
+                            // set the parameters in the given scope
+                            parameters
+                                .iter()
+                                .enumerate()
+                                .for_each(|(idx, param)| match param {
+                                    Token::Identifier(param_name) => {
+                                        scope.insert(
+                                            param_name.clone(),
+                                            arguments.get(idx).unwrap().clone(),
+                                        );
+                                    }
+                                    _ => panic!(),
+                                });
+
+                            self.context = scope;
+                            let result = self.eval_block_statement(body.statements);
+                            self.context = previous_context;
+
+                            result
+                        }
+                        obj => panic!("Wrong object, expected Object::Function, got: {:?}", obj),
+                    }
                 }
                 _ => todo!(),
             },
         }
+    }
+
+    fn eval_expressions(&mut self, expressions: Vec<Expression>) -> Vec<Object> {
+        expressions
+            .iter()
+            .map(|expression| self.eval(AstNode::Expression(expression.clone())))
+            .collect()
     }
 
     fn eval_program(&mut self, statements: Vec<AstNode>) -> Object {
@@ -110,6 +175,7 @@ impl Evaluator {
 
         result
     }
+
     fn eval_prefix_expression(&self, operator: Token, right: Object) -> Object {
         match operator {
             Token::Bang => self.eval_bang_expression(right),
@@ -163,6 +229,7 @@ impl Object {
             Object::Integer(value) => format!("{value}"),
             Object::Boolean(value) => format!("{value}"),
             Object::Return(value) => value.inspect(),
+            Object::Function { .. } => "function".to_string(),
             Object::Null => "null".to_string(),
         }
     }
