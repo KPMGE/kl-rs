@@ -32,12 +32,8 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
 
                 let expected_statement = AstNode::Statement(Statement::LetStatement {
                     token: Token::Let,
-                    name: Expression::Identifier {
-                        token: Token::Identifier(expected_identifier.to_string()),
-                    },
-                    value: Expression::Int {
-                        token: Token::Int(expected_int.to_string()),
-                    },
+                    name: Expression::Identifier(expected_identifier.to_string()),
+                    value: Expression::Int(expected_int.to_string().parse().unwrap()),
                 });
 
                 assert_eq!(*statement, expected_statement);
@@ -69,9 +65,8 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
 
             statements.iter().enumerate().for_each(|(idx, statement)| {
                 let expected_int = expected_ints.get(idx).unwrap();
-                let expected_expression = Expression::Int {
-                    token: Token::Int(expected_int.to_string()),
-                };
+                let expected_expression =
+                    Expression::Int(expected_int.to_string().parse().unwrap());
 
                 let expected_statement = AstNode::Statement(Statement::ReturnStatement {
                     token: Token::Return,
@@ -102,12 +97,7 @@ fn given_a_variable_name_it_should_parse_correctly() {
 
             match statements.first().unwrap() {
                 AstNode::Expression(expression) => {
-                    assert_eq!(
-                        *expression,
-                        Expression::Identifier {
-                            token: Token::Identifier("foo".to_string())
-                        }
-                    );
+                    assert_eq!(*expression, Expression::Identifier("foo".to_string()));
                 }
                 _ => panic!("wrong statement!"),
             }
@@ -136,9 +126,7 @@ fn given_a_number_expression_it_should_parse_correctly() {
                 AstNode::Expression(expression) => {
                     assert_eq!(
                         *expression,
-                        Expression::Int {
-                            token: Token::Int("5".to_string())
-                        }
+                        Expression::Int("5".to_string().parse().unwrap())
                     );
                 }
                 _ => panic!("wrong statement!"),
@@ -175,9 +163,8 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
                 .for_each(|(idx, statement)| match statement {
                     AstNode::Expression(expression) => {
                         let expected_operator = expected_operators.get(idx).unwrap();
-                        let expected_right_expression = Expression::Int {
-                            token: Token::Int(expected_values.get(idx).unwrap().to_string()),
-                        };
+                        let expected_right_expression =
+                            Expression::Int(expected_values.get(idx).unwrap().parse().unwrap());
 
                         match expression {
                             Expression::Prefix { operator, right } => {
@@ -238,20 +225,11 @@ fn given_infix_expressions_it_should_parse_correctly() {
 fn given_boolean_expression_it_should_parse_correctly() {
     let test_cases = vec!["true;", "false;", "!true;"];
     let expected_expressions = vec![
-        Expression::Boolean {
-            token: Token::True,
-            value: true,
-        },
-        Expression::Boolean {
-            token: Token::False,
-            value: false,
-        },
+        Expression::Boolean(true),
+        Expression::Boolean(false),
         Expression::Prefix {
             operator: Token::Bang,
-            right: Box::new(Expression::Boolean {
-                token: Token::True,
-                value: true,
-            }),
+            right: Box::new(Expression::Boolean(true)),
         },
     ];
 
@@ -313,18 +291,12 @@ fn given_an_if_expression_it_should_parse_correctly() {
         token: Token::If,
         condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
-            left: Box::new(Expression::Identifier {
-                token: Token::Identifier("x".to_string()),
-            }),
-            right: Box::new(Expression::Identifier {
-                token: Token::Identifier("y".to_string()),
-            }),
+            left: Box::new(Expression::Identifier("x".to_string())),
+            right: Box::new(Expression::Identifier("y".to_string())),
         })),
         consequence: BlockStatement {
             token: Token::LeftBrace,
-            statements: vec![AstNode::Expression(Expression::Identifier {
-                token: Token::Identifier("x".to_string()),
-            })],
+            statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
         },
         alternative: None,
     };
@@ -356,24 +328,16 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
         token: Token::If,
         condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
-            left: Box::new(Expression::Identifier {
-                token: Token::Identifier("x".to_string()),
-            }),
-            right: Box::new(Expression::Identifier {
-                token: Token::Identifier("y".to_string()),
-            }),
+            left: Box::new(Expression::Identifier("x".to_string())),
+            right: Box::new(Expression::Identifier("y".to_string())),
         })),
         consequence: BlockStatement {
             token: Token::LeftBrace,
-            statements: vec![AstNode::Expression(Expression::Identifier {
-                token: Token::Identifier("x".to_string()),
-            })],
+            statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
         },
         alternative: Some(BlockStatement {
             token: Token::LeftBrace,
-            statements: vec![AstNode::Expression(Expression::Identifier {
-                token: Token::Identifier("y".to_string()),
-            })],
+            statements: vec![AstNode::Expression(Expression::Identifier("y".to_string()))],
         }),
     };
 
@@ -408,12 +372,8 @@ fn given_a_function_expression_it_should_parse_correctly() {
             token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Infix {
                 operator: Token::Plus,
-                left: Box::new(Expression::Identifier {
-                    token: Token::Identifier("a".to_string()),
-                }),
-                right: Box::new(Expression::Identifier {
-                    token: Token::Identifier("b".to_string()),
-                }),
+                left: Box::new(Expression::Identifier("a".to_string())),
+                right: Box::new(Expression::Identifier("b".to_string())),
             })],
         },
     };
@@ -445,27 +405,17 @@ fn given_a_call_expression_it_should_parse_correctly() {
 
     let expected_expression = Expression::CallExpression {
         token: Token::LeftParentesis,
-        function: Box::new(Expression::Identifier {
-            token: Token::Identifier("add".to_string()),
-        }),
+        function: Box::new(Expression::Identifier("add".to_string())),
         arguments: vec![
             Expression::Infix {
                 operator: Token::Asterisk,
-                left: Box::new(Expression::Int {
-                    token: Token::Int("2".to_string()),
-                }),
-                right: Box::new(Expression::Int {
-                    token: Token::Int("3".to_string()),
-                }),
+                left: Box::new(Expression::Int(2)),
+                right: Box::new(Expression::Int(3)),
             },
             Expression::Infix {
                 operator: Token::Plus,
-                left: Box::new(Expression::Int {
-                    token: Token::Int("1".to_string()),
-                }),
-                right: Box::new(Expression::Int {
-                    token: Token::Int("4".to_string()),
-                }),
+                left: Box::new(Expression::Int(1)),
+                right: Box::new(Expression::Int(4)),
             },
         ],
     };
@@ -531,12 +481,8 @@ fn assert_infix_expression(code: &str, expected_operator: Token, expected_litera
                 AstNode::Expression(expression) => {
                     let expected_left_value = expected_literals.0;
                     let expected_right_value = expected_literals.1;
-                    let expected_left_exp = Expression::Int {
-                        token: Token::Int(expected_left_value.to_string()),
-                    };
-                    let expected_right_exp = Expression::Int {
-                        token: Token::Int(expected_right_value.to_string()),
-                    };
+                    let expected_left_exp = Expression::Int(expected_left_value.parse().unwrap());
+                    let expected_right_exp = Expression::Int(expected_right_value.parse().unwrap());
 
                     let expected_expression = Expression::Infix {
                         operator: expected_operator,

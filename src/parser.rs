@@ -158,21 +158,22 @@ impl Parser {
     }
 
     fn parse_identifier(&mut self) -> Option<Expression> {
-        if let Token::Identifier(_) = &self.current_token {
-            let identifier = Expression::Identifier {
-                token: self.current_token.clone(),
-            };
-            return Some(identifier);
+        if let Token::Identifier(name) = &self.current_token {
+            return Some(Expression::Identifier(name.clone()));
         }
         None
     }
 
     fn parse_int(&mut self) -> Option<Expression> {
-        if let Token::Int(_) = &self.current_token {
-            let int_expression = Expression::Int {
-                token: self.current_token.clone(),
-            };
-            return Some(int_expression);
+        if let Token::Int(num_str) = &self.current_token {
+            let num = match num_str.parse::<i32>() {
+                Ok(num) => Some(num),
+                Err(_) => {
+                    self.report_error(&format!("error parsing integer: {}", num_str));
+                    None
+                }
+            }?;
+            return Some(Expression::Int(num));
         }
         None
     }
@@ -225,10 +226,7 @@ impl Parser {
             }
         };
 
-        Some(Expression::Boolean {
-            token: self.current_token.clone(),
-            value,
-        })
+        Some(Expression::Boolean(value))
     }
 
     fn parse_if_expression(&mut self) -> Option<Expression> {

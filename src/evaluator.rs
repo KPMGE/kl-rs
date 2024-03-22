@@ -30,116 +30,122 @@ impl Evaluator {
     pub fn eval(&mut self, node: AstNode) -> Object {
         match node {
             AstNode::Program { statements } => self.eval_program(statements),
-            AstNode::Statement(statement) => match statement {
-                Statement::ReturnStatement { value, .. } => {
-                    let result_object = self.eval(AstNode::Expression(value));
-                    Object::Return(Box::new(result_object))
-                }
-                Statement::LetStatement { name, value, .. } => {
-                    let let_name = match name {
-                        Expression::Identifier {
-                            token: Token::Identifier(str),
-                        } => str,
-                        _ => panic!(),
-                    };
+            AstNode::Statement(statement) => self.eval_statement(statement),
+            AstNode::Expression(expression) => self.eval_expression(expression),
+        }
+    }
 
-                    let result_object = self.eval(AstNode::Expression(value));
-                    self.context.insert(let_name.clone(), result_object.clone());
-                    result_object
+    fn eval_expression(&mut self, expression: Expression) -> Object {
+        match expression {
+            Expression::Int(value) => Object::Integer(value),
+            Expression::Boolean(value) => Object::Boolean(value),
+            Expression::Prefix { operator, right } => {
+                let right = self.eval(AstNode::Expression(*right));
+                self.eval_prefix_expression(operator, right)
+            }
+            Expression::Infix {
+                operator,
+                left,
+                right,
+            } => {
+                let left = self.eval(AstNode::Expression(*left));
+                let right = self.eval(AstNode::Expression(*right));
+                self.eval_infix_expression(left, right, operator)
+            }
+            Expression::IfExpression {
+                condition,
+                consequence,
+                alternative,
+                ..
+            } => {
+                let condition = self.eval(*condition);
+
+                if condition.is_truthy() {
+                    return self.eval_block_statement(consequence.statements);
                 }
+
+                if let Some(alternative_block) = alternative {
+                    return self.eval_block_statement(alternative_block.statements);
+                }
+
+                Object::Null
+            }
+            Expression::Identifier(let_name) => self
+                .context
+                .get(&let_name)
+                .expect("ERROR: Could not find identifer")
+                .clone(),
+            Expression::FunctionExpression {
+                parameters, body, ..
+            } => Object::Function {
+                parameters,
+                body,
+                scope: HashMap::new(),
             },
-            AstNode::Expression(expression) => match expression {
-                Expression::Int {
-                    token: Token::Int(value),
-                } => Object::Integer(value.parse::<i32>().expect("Could not parse integer")),
-                Expression::Boolean { value, .. } => Object::Boolean(value),
-                Expression::Prefix { operator, right } => {
-                    let right = self.eval(AstNode::Expression(*right));
-                    self.eval_prefix_expression(operator, right)
+            Expression::CallExpression {
+                function,
+                arguments,
+                ..
+            } => {
+                let function = self.eval(AstNode::Expression(*function));
+
+                match function {
+                    Object::Function {
+                        parameters,
+                        body,
+                        mut scope,
+                    } => self.eval_function_call(parameters, arguments, body, &mut scope),
+                    obj => panic!("Wrong object, expected Object::Function, got: {:?}", obj),
                 }
-                Expression::Infix {
-                    operator,
-                    left,
-                    right,
-                } => {
-                    let left = self.eval(AstNode::Expression(*left));
-                    let right = self.eval(AstNode::Expression(*right));
-                    self.eval_infix_expression(left, right, operator)
+            }
+        }
+    }
+
+    fn eval_function_call(
+        &mut self,
+        parameters: Vec<Token>,
+        arguments: Vec<Expression>,
+        body: BlockStatement,
+        scope: &mut HashMap<String, Object>,
+    ) -> Object {
+        let previous_context = self.context.clone();
+
+        let arguments = self.eval_expressions(arguments);
+
+        // set the parameters in the given scope
+        parameters
+            .iter()
+            .enumerate()
+            .for_each(|(idx, param)| match param {
+                Token::Identifier(param_name) => {
+                    scope.insert(param_name.clone(), arguments.get(idx).unwrap().clone());
                 }
-                Expression::IfExpression {
-                    condition,
-                    consequence,
-                    alternative,
-                    ..
-                } => {
-                    let condition = self.eval(*condition);
+                _ => panic!(),
+            });
 
-                    if condition.is_truthy() {
-                        return self.eval_block_statement(consequence.statements);
-                    }
+        self.context = scope.clone();
+        let result = self.eval_block_statement(body.statements);
+        self.context = previous_context;
 
-                    if let Some(alternative_block) = alternative {
-                        return self.eval_block_statement(alternative_block.statements);
-                    }
+        result
+    }
 
-                    Object::Null
-                }
-                Expression::Identifier {
-                    token: Token::Identifier(let_name),
-                } => self
-                    .context
-                    .get(&let_name)
-                    .expect("ERROR: Could not find identifer")
-                    .clone(),
-                Expression::FunctionExpression {
-                    parameters, body, ..
-                } => Object::Function {
-                    parameters,
-                    body,
-                    scope: HashMap::new(),
-                },
-                Expression::CallExpression {
-                    function,
-                    arguments,
-                    ..
-                } => {
-                    let function = self.eval(AstNode::Expression(*function));
+    fn eval_statement(&mut self, statement: Statement) -> Object {
+        match statement {
+            Statement::ReturnStatement { value, .. } => {
+                let result_object = self.eval(AstNode::Expression(value));
+                Object::Return(Box::new(result_object))
+            }
+            Statement::LetStatement { name, value, .. } => {
+                let let_name = match name {
+                    Expression::Identifier(identifier_name) => identifier_name,
+                    _ => panic!(),
+                };
 
-                    match function {
-                        Object::Function {
-                            parameters,
-                            body,
-                            mut scope,
-                        } => {
-                            let previous_context = self.context.clone();
-
-                            let arguments = self.eval_expressions(arguments);
-
-                            // set the parameters in the given scope
-                            parameters
-                                .iter()
-                                .enumerate()
-                                .for_each(|(idx, param)| match param {
-                                    Token::Identifier(param_name) => {
-                                        scope.insert(
-                                            param_name.clone(),
-                                            arguments.get(idx).unwrap().clone(),
-                                        );
-                                    }
-                                    _ => panic!(),
-                                });
-
-                            self.context = scope;
-                            let result = self.eval_block_statement(body.statements);
-                            self.context = previous_context;
-
-                            result
-                        }
-                        obj => panic!("Wrong object, expected Object::Function, got: {:?}", obj),
-                    }
-                }
-                _ => todo!(),
-            },
+                let result_object = self.eval(AstNode::Expression(value));
+                self.context.insert(let_name.clone(), result_object.clone());
+                result_object
+            }
         }
     }
 

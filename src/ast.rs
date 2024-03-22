@@ -2,12 +2,9 @@ use crate::token::Token;
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Expression {
-    Int {
-        token: Token, // Token::Int(val)
-    },
-    Identifier {
-        token: Token, // Token::Idetifier(name)
-    },
+    Int(i32),
+    Identifier(String),
+    Boolean(bool),
     Prefix {
         operator: Token, // Token::Bang, Token::Minus
         right: Box<Expression>,
@@ -16,10 +13,6 @@ pub enum Expression {
         operator: Token, // Token::Plus, Token::Minus, Token::Equals etc.
         left: Box<Expression>,
         right: Box<Expression>,
-    },
-    Boolean {
-        token: Token, // Token::True or Token::False
-        value: bool,
     },
     IfExpression {
         token: Token, // Token::If
