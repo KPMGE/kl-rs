@@ -132,11 +132,11 @@ impl Evaluator {
 
     fn eval_statement(&mut self, statement: Statement) -> Object {
         match statement {
-            Statement::ReturnStatement { value, .. } => {
+            Statement::ReturnStatement(value) => {
                 let result_object = self.eval(AstNode::Expression(value));
                 Object::Return(Box::new(result_object))
             }
-            Statement::LetStatement { name, value, .. } => {
+            Statement::LetStatement { name, value } => {
                 let let_name = match name {
                     Expression::Identifier(identifier_name) => identifier_name,
                     _ => panic!(),

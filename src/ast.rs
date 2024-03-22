@@ -15,18 +15,15 @@ pub enum Expression {
         right: Box<Expression>,
     },
     IfExpression {
-        token: Token, // Token::If
         condition: Box<AstNode>,
         consequence: BlockStatement,         // Statement::BlockStatement
         alternative: Option<BlockStatement>, // Statement::BlockStatement
     },
     FunctionExpression {
-        token: Token,           // Token::Fn
         parameters: Vec<Token>, // Vec<Token::Identifier>
         body: BlockStatement,
     },
     CallExpression {
-        token: Token,              // Token::LeftParentesis
         function: Box<Expression>, // Expression::FunctionExpression or Expression::Identifier
         arguments: Vec<Expression>,
     },
@@ -40,13 +37,9 @@ pub struct BlockStatement {
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Statement {
+    ReturnStatement(Expression),
     LetStatement {
-        token: Token,     // Token::Let
         name: Expression, // Expression::Identifer
-        value: Expression,
-    },
-    ReturnStatement {
-        token: Token, // Token::Return
         value: Expression,
     },
 }

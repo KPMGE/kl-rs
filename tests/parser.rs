@@ -31,7 +31,6 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
                 let expected_int = expected_ints.get(idx).unwrap();
 
                 let expected_statement = AstNode::Statement(Statement::LetStatement {
-                    token: Token::Let,
                     name: Expression::Identifier(expected_identifier.to_string()),
                     value: Expression::Int(expected_int.to_string().parse().unwrap()),
                 });
@@ -68,10 +67,8 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
                 let expected_expression =
                     Expression::Int(expected_int.to_string().parse().unwrap());
 
-                let expected_statement = AstNode::Statement(Statement::ReturnStatement {
-                    token: Token::Return,
-                    value: expected_expression,
-                });
+                let expected_statement =
+                    AstNode::Statement(Statement::ReturnStatement(expected_expression));
 
                 assert_eq!(*statement, expected_statement);
             })
@@ -288,7 +285,6 @@ fn given_an_if_expression_it_should_parse_correctly() {
     let mut parser = Parser::new(lexer);
 
     let expected_expression = Expression::IfExpression {
-        token: Token::If,
         condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier("x".to_string())),
@@ -325,7 +321,6 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
     let mut parser = Parser::new(lexer);
 
     let expected_expression = Expression::IfExpression {
-        token: Token::If,
         condition: Box::new(AstNode::Expression(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier("x".to_string())),
@@ -363,7 +358,6 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
 fn given_a_function_expression_it_should_parse_correctly() {
     let code = "fn(a, b) { a + b };";
     let expected_expression = Expression::FunctionExpression {
-        token: Token::Function,
         parameters: vec![
             Token::Identifier("a".to_string()),
             Token::Identifier("b".to_string()),
@@ -404,7 +398,6 @@ fn given_a_call_expression_it_should_parse_correctly() {
     let code = "add(2 * 3, 1 + 4);";
 
     let expected_expression = Expression::CallExpression {
-        token: Token::LeftParentesis,
         function: Box::new(Expression::Identifier("add".to_string())),
         arguments: vec![
             Expression::Infix {
