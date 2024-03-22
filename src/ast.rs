@@ -2,12 +2,9 @@ use crate::token::Token;
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Expression {
-    Int {
-        token: Token, // Token::Int(val)
-    },
-    Identifier {
-        token: Token, // Token::Idetifier(name)
-    },
+    Int(i32),
+    Identifier(String),
+    Boolean(bool),
     Prefix {
         operator: Token, // Token::Bang, Token::Minus
         right: Box<Expression>,
@@ -17,23 +14,16 @@ pub enum Expression {
         left: Box<Expression>,
         right: Box<Expression>,
     },
-    Boolean {
-        token: Token, // Token::True or Token::False
-        value: bool,
-    },
     IfExpression {
-        token: Token, // Token::If
         condition: Box<AstNode>,
         consequence: BlockStatement,         // Statement::BlockStatement
         alternative: Option<BlockStatement>, // Statement::BlockStatement
     },
     FunctionExpression {
-        token: Token,           // Token::Fn
         parameters: Vec<Token>, // Vec<Token::Identifier>
         body: BlockStatement,
     },
     CallExpression {
-        token: Token,              // Token::LeftParentesis
         function: Box<Expression>, // Expression::FunctionExpression or Expression::Identifier
         arguments: Vec<Expression>,
     },
@@ -47,13 +37,9 @@ pub struct BlockStatement {
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Statement {
+    ReturnStatement(Expression),
     LetStatement {
-        token: Token,     // Token::Let
         name: Expression, // Expression::Identifer
-        value: Expression,
-    },
-    ReturnStatement {
-        token: Token, // Token::Return
         value: Expression,
     },
 }

@@ -89,11 +89,7 @@ impl Parser {
             return None;
         }
 
-        Some(AstNode::Statement(Statement::LetStatement {
-            token: Token::Let,
-            name,
-            value,
-        }))
+        Some(AstNode::Statement(Statement::LetStatement { name, value }))
     }
 
     fn parse_expression_statement(&mut self) -> Option<AstNode> {
@@ -119,10 +115,7 @@ impl Parser {
 
         let expression = self.parse_expression(Precedence::Lowest)?;
 
-        Some(AstNode::Statement(Statement::ReturnStatement {
-            token: Token::Return,
-            value: expression,
-        }))
+        Some(AstNode::Statement(Statement::ReturnStatement(expression)))
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
@@ -158,21 +151,22 @@ impl Parser {
     }
 
     fn parse_identifier(&mut self) -> Option<Expression> {
-        if let Token::Identifier(_) = &self.current_token {
-            let identifier = Expression::Identifier {
-                token: self.current_token.clone(),
-            };
-            return Some(identifier);
+        if let Token::Identifier(name) = &self.current_token {
+            return Some(Expression::Identifier(name.clone()));
         }
         None
     }
 
     fn parse_int(&mut self) -> Option<Expression> {
-        if let Token::Int(_) = &self.current_token {
-            let int_expression = Expression::Int {
-                token: self.current_token.clone(),
-            };
-            return Some(int_expression);
+        if let Token::Int(num_str) = &self.current_token {
+            let num = match num_str.parse::<i32>() {
+                Ok(num) => Some(num),
+                Err(_) => {
+                    self.report_error(&format!("error parsing integer: {}", num_str));
+                    None
+                }
+            }?;
+            return Some(Expression::Int(num));
         }
         None
     }
@@ -225,10 +219,7 @@ impl Parser {
             }
         };
 
-        Some(Expression::Boolean {
-            token: self.current_token.clone(),
-            value,
-        })
+        Some(Expression::Boolean(value))
     }
 
     fn parse_if_expression(&mut self) -> Option<Expression> {
@@ -259,7 +250,6 @@ impl Parser {
         };
 
         Some(Expression::IfExpression {
-            token: Token::If,
             condition: Box::new(AstNode::Expression(condition)),
             consequence,
             alternative,
@@ -277,11 +267,7 @@ impl Parser {
         let parameters = self.parse_function_parameters()?;
         let body = self.parse_block_statement()?;
 
-        Some(Expression::FunctionExpression {
-            token: Token::Function,
-            parameters,
-            body,
-        })
+        Some(Expression::FunctionExpression { parameters, body })
     }
 
     fn parse_function_parameters(&mut self) -> Option<Vec<Token>> {
@@ -347,13 +333,10 @@ impl Parser {
         })
     }
     fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
-        let token = self.current_token.clone();
-
         self.advance_tokens();
         let arguments = self.parse_call_expression_arguments()?;
 
         Some(Expression::CallExpression {
-            token,
             function: Box::new(function),
             arguments,
         })
