@@ -5,6 +5,7 @@ pub enum Expression {
     Int(i32),
     Identifier(String),
     Boolean(bool),
+    String(String),
     Prefix {
         operator: Token, // Token::Bang, Token::Minus
         right: Box<Expression>,

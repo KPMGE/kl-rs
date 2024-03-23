@@ -150,6 +150,13 @@ impl Parser {
         false
     }
 
+    fn parse_string(&mut self) -> Option<Expression> {
+        if let Token::String(s) = &self.current_token {
+            return Some(Expression::String(s.clone()));
+        }
+        None
+    }
+
     fn parse_identifier(&mut self) -> Option<Expression> {
         if let Token::Identifier(name) = &self.current_token {
             return Some(Expression::Identifier(name.clone()));
@@ -399,6 +406,7 @@ impl Token {
 
     fn prefix_parse_fn(&self) -> Option<fn(&mut Parser) -> Option<Expression>> {
         match self {
+            Token::String(_) => Some(Parser::parse_string),
             Token::Identifier(_) => Some(Parser::parse_identifier),
             Token::Int(_) => Some(Parser::parse_int),
             Token::Bang => Some(Parser::parse_prefix_expression),
