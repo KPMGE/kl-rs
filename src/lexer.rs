@@ -1,4 +1,5 @@
-    use std::collections::HashMap;
+
+use std::collections::HashMap;
 
 use crate::token::Token;
 
@@ -91,7 +92,10 @@ impl Lexer {
 
     fn read_string(&mut self) -> String {
         if self.current_char.unwrap() != '"' {
-            panic!("Unexpected start of string, expected: '\"', got: {:?}", self.current_char);
+            panic!(
+                "Unexpected start of string, expected: '\"', got: {:?}",
+                self.current_char
+            );
         }
 
         let mut str = String::new();
