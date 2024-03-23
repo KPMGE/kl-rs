@@ -236,7 +236,7 @@ impl Object {
         match self {
             Object::Integer(value) => format!("{value}"),
             Object::Boolean(value) => format!("{value}"),
-            Object::String(value) => format!("{value}"),
+            Object::String(value) => value.to_string(),
             Object::Return(value) => value.inspect(),
             Object::Function { .. } => "function".to_string(),
             Object::Null => "null".to_string(),
