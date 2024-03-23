@@ -131,3 +131,22 @@ fn given_return_statements_it_should_evaluate_correctly() {
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
     })
 }
+
+#[test]
+fn given_a_string_expression_it_should_evaluate_correctly() {
+    let code = "\"kevin\"";
+    let expected_obj = Object::String("kevin".to_string());
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+    let parsed_program = parser.parse_program();
+    let node = match parsed_program {
+        AstNode::Program { statements } => statements.first().unwrap().clone(),
+        _ => panic!("Unexpected AstNode!"),
+    };
+
+    let mut evaluator = Evaluator::new();
+    let evaluated_obj = evaluator.eval(node);
+
+    assert_eq!(evaluated_obj, expected_obj);
+}
