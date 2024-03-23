@@ -11,6 +11,7 @@ pub struct Evaluator {
 pub enum Object {
     Integer(i32),
     Boolean(bool),
+    String(String),
     Return(Box<Object>),
     Function {
         parameters: Vec<Token>, // Token::Identifier
@@ -39,6 +40,7 @@ impl Evaluator {
         match expression {
             Expression::Int(value) => Object::Integer(value),
             Expression::Boolean(value) => Object::Boolean(value),
+            Expression::String(value) => Object::String(value),
             Expression::Prefix { operator, right } => {
                 let right = self.eval(AstNode::Expression(*right));
                 self.eval_prefix_expression(operator, right)
@@ -234,6 +236,7 @@ impl Object {
         match self {
             Object::Integer(value) => format!("{value}"),
             Object::Boolean(value) => format!("{value}"),
+            Object::String(value) => value.to_string(),
             Object::Return(value) => value.inspect(),
             Object::Function { .. } => "function".to_string(),
             Object::Null => "null".to_string(),
