@@ -3,14 +3,22 @@ use std::io::{self, BufRead, Write};
 use kl_rs::{evaluator::Evaluator, lexer::Lexer, parser::Parser, token::Token};
 
 gflags::define! {
+    -h, --help = false
+}
+gflags::define! {
     -v, --verbose = false
 }
 
 fn main() {
     let stdin = std::io::stdin();
     let mut handle = stdin.lock();
-    let mut evaluator = Evaluator::new();
     gflags::parse();
+
+    if HELP.flag {
+        gflags::print_help_and_exit(0);
+    }
+
+    let mut evaluator = Evaluator::new();
 
     loop {
         let mut input = String::new();
@@ -36,6 +44,7 @@ fn main() {
 
         let lexer = Lexer::new(input.to_string());
         let mut parser = Parser::new(lexer.clone());
+
 
         if VERBOSE.flag {
             debug_lexer(lexer.clone());
