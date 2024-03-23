@@ -13,8 +13,6 @@ pub enum Token {
     Slash,
     GreaterThan,
     LessThan,
-    Int(String),
-    Identifier(String),
     LeftParentesis,
     Let,
     True,
@@ -27,4 +25,7 @@ pub enum Token {
     RightParentesis,
     LeftBrace,
     RightBrace,
+    Int(String),
+    Identifier(String),
+    String(String),
 }

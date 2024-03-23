@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+    use std::collections::HashMap;
 
 use crate::token::Token;
 
@@ -52,6 +52,7 @@ impl Lexer {
             ',' => Token::Comma,
             '/' => Token::Slash,
             ';' => Token::Semicolon,
+            '"' => Token::String(self.read_string()),
             '=' => match self.peek_char(self.read_position) {
                 Some('=') => {
                     self.read_char();
@@ -86,6 +87,28 @@ impl Lexer {
 
         self.read_char();
         token
+    }
+
+    fn read_string(&mut self) -> String {
+        if self.current_char.unwrap() != '"' {
+            panic!("Unexpected start of string, expected: '\"', got: {:?}", self.current_char);
+        }
+
+        let mut str = String::new();
+
+        self.read_char();
+
+        while let Some(c) = self.current_char {
+            if c == '"' {
+                break;
+            }
+            str.push(c);
+            self.read_char();
+        }
+
+        self.read_char();
+
+        str
     }
 
     fn read_number(&mut self) -> String {
