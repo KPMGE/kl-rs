@@ -45,7 +45,6 @@ fn main() {
         let lexer = Lexer::new(input.to_string());
         let mut parser = Parser::new(lexer.clone());
 
-
         if VERBOSE.flag {
             debug_lexer(lexer.clone());
             debug_parser(parser.clone());
