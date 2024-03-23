@@ -78,3 +78,5 @@ After that, an executable will be generated in the folder
 - [ ] Add support for arrays
 - [ ] Add build in functions
 - [ ] Add support for hashes
+- [ ] Refactor tests
+- [ ] Optimize project
