@@ -111,7 +111,6 @@ impl Evaluator {
         scope: &mut HashMap<String, Object>,
     ) -> Object {
         let previous_context = self.context.clone();
-
         let arguments = self.eval_expressions(arguments);
 
         // set the parameters in the given scope

@@ -45,17 +45,6 @@ pub enum Statement {
     },
 }
 
-#[derive(Debug, PartialEq, PartialOrd)]
-pub enum Precedence {
-    Lowest,
-    Equals,
-    LessGreater,
-    Sum,
-    Product,
-    Prefix,
-    Call,
-}
-
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum AstNode {
     Statement(Statement),

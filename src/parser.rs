@@ -1,8 +1,19 @@
 use crate::{
-    ast::{AstNode, BlockStatement, Expression, Precedence, Statement},
+    ast::{AstNode, BlockStatement, Expression, Statement},
     lexer::Lexer,
     token::Token,
 };
+
+#[derive(Debug, PartialEq, PartialOrd)]
+enum Precedence {
+    Lowest,
+    Equals,
+    LessGreater,
+    Sum,
+    Product,
+    Prefix,
+    Call,
+}
 
 #[derive(Debug, Clone)]
 pub struct Parser {
@@ -266,7 +277,8 @@ impl Parser {
     fn parse_function_expression(&mut self) -> Option<Expression> {
         self.advance_tokens();
 
-        if !self.expect_current_token(Token::LeftParentesis) {
+        if self.current_token != Token::LeftParentesis {
+            self.advance_tokens();
             self.report_expected_token_error(Token::LeftParentesis, self.current_token.clone());
             return None;
         }
@@ -280,7 +292,8 @@ impl Parser {
     fn parse_function_parameters(&mut self) -> Option<Vec<Token>> {
         let mut parameters = Vec::new();
 
-        if self.next_token == Token::RightParentesis {
+        if self.expect_next_token(Token::RightParentesis) {
+            self.advance_tokens();
             return Some(parameters);
         }
 
@@ -339,6 +352,7 @@ impl Parser {
             statements,
         })
     }
+
     fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
         self.advance_tokens();
         let arguments = self.parse_call_expression_arguments()?;
@@ -352,7 +366,7 @@ impl Parser {
     fn parse_call_expression_arguments(&mut self) -> Option<Vec<Expression>> {
         let mut arguments = Vec::new();
 
-        if self.next_token == Token::RightParentesis {
+        if self.current_token == Token::RightParentesis {
             self.advance_tokens();
             return Some(arguments);
         }
