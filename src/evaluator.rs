@@ -14,7 +14,7 @@ pub enum Object {
     String(String),
     Return(Box<Object>),
     Function {
-        parameters: Vec<Token>, // Token::Identifier
+        parameters: Vec<Token>,
         body: BlockStatement,
         scope: HashMap<String, Object>,
     },

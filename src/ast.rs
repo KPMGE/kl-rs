@@ -7,25 +7,25 @@ pub enum Expression {
     Boolean(bool),
     String(String),
     Prefix {
-        operator: Token, // Token::Bang, Token::Minus
+        operator: Token,
         right: Box<Expression>,
     },
     Infix {
-        operator: Token, // Token::Plus, Token::Minus, Token::Equals etc.
+        operator: Token,
         left: Box<Expression>,
         right: Box<Expression>,
     },
     IfExpression {
         condition: Box<AstNode>,
-        consequence: BlockStatement,         // Statement::BlockStatement
-        alternative: Option<BlockStatement>, // Statement::BlockStatement
+        consequence: BlockStatement,
+        alternative: Option<BlockStatement>,
     },
     FunctionExpression {
-        parameters: Vec<Token>, // Vec<Token::Identifier>
+        parameters: Vec<Token>,
         body: BlockStatement,
     },
     CallExpression {
-        function: Box<Expression>, // Expression::FunctionExpression or Expression::Identifier
+        function: Box<Expression>,
         arguments: Vec<Expression>,
     },
 }
@@ -39,7 +39,7 @@ pub struct BlockStatement {
 pub enum Statement {
     ReturnStatement(Expression),
     LetStatement {
-        name: Expression, // Expression::Identifer
+        name: Expression,
         value: Expression,
     },
 }
