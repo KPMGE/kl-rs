@@ -40,6 +40,31 @@ foo(fn(...) {})
 In the example above, we're defining the `foo` function and running it with an
 unnamed function, a clojure. 
 
+### Strings
+As in most languages, strings here are also represented using `""`, and they are
+expressions as well, that means we can bind them to variables, return them from
+functions or even let them as the last expression in a block of code, in which
+case they will be evaluated!
+
+#### Binding to a name
+```bash
+let foo = "hello world";
+```
+
+#### Using as the result of an expression
+```bash
+let foo = if(<condition>) { "foo" } else { "bar" };
+```
+
+In this case, if the condition is true, the result binded to the variable _foo_
+will be _"foo"_, otherwise it will be _"bar"_
+
+#### Returning from a function
+```bash
+let foo = fn(...) { return "foo" };
+foo(); # "foo"
+```
+
 
 ## How to run it?
 In order to run this project on you machine, first make sure you got [rust](https://www.rust-lang.org/)
