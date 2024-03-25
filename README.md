@@ -98,6 +98,7 @@ After that, an executable will be generated in the folder
 
 
 ## TODOS
+- [ ] Add support for comments
 - [ ] Add standard library
 - [ ] Add loops
 - [ ] Add support for arrays
