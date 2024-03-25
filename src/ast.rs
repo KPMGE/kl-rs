@@ -32,7 +32,6 @@ pub enum Expression {
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub struct BlockStatement {
-    pub token: Token, // Token::LeftBrace
     pub statements: Vec<AstNode>,
 }
 

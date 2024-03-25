@@ -291,7 +291,6 @@ fn given_an_if_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier("y".to_string())),
         })),
         consequence: BlockStatement {
-            token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
         },
         alternative: None,
@@ -327,11 +326,9 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier("y".to_string())),
         })),
         consequence: BlockStatement {
-            token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
         },
         alternative: Some(BlockStatement {
-            token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Identifier("y".to_string()))],
         }),
     };
@@ -363,7 +360,6 @@ fn given_a_function_expression_it_should_parse_correctly() {
             Token::Identifier("b".to_string()),
         ],
         body: BlockStatement {
-            token: Token::LeftBrace,
             statements: vec![AstNode::Expression(Expression::Infix {
                 operator: Token::Plus,
                 left: Box::new(Expression::Identifier("a".to_string())),

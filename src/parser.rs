@@ -278,8 +278,8 @@ impl Parser {
         self.advance_tokens();
 
         if self.current_token != Token::LeftParentesis {
-            self.advance_tokens();
             self.report_expected_token_error(Token::LeftParentesis, self.current_token.clone());
+            self.advance_tokens();
             return None;
         }
 
@@ -296,6 +296,8 @@ impl Parser {
             self.advance_tokens();
             return Some(parameters);
         }
+
+        self.advance_tokens();
 
         let identifier = self.current_token.clone();
         parameters.push(identifier);
@@ -347,10 +349,7 @@ impl Parser {
             self.advance_tokens();
         }
 
-        Some(BlockStatement {
-            token: Token::LeftBrace,
-            statements,
-        })
+        Some(BlockStatement { statements })
     }
 
     fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
