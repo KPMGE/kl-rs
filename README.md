@@ -73,6 +73,11 @@ used as you would expect!
 In this language, just like C, numbers can be used in if-else expressions. `0`
 Meaning `false` and any other number meaning `true`
 
+### Comments
+It's possible to comment code out using the syntax: ```c /* comment */```
+This syntax works for both, single line and multiline comments!
+
+
 
 ## How to run it?
 In order to run this project on you machine, first make sure you got [rust](https://www.rust-lang.org/)
