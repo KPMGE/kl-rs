@@ -65,6 +65,14 @@ let foo = fn(...) { return "foo" };
 foo(); # "foo"
 ```
 
+### Booleans
+In this language, there is support for `true` and `false` booleans, they can be
+used as you would expect!
+
+##### Truthy values
+In this language, just like C, numbers can be used in if-else expressions. `0`
+Meaning `false` and any other number meaning `true`
+
 
 ## How to run it?
 In order to run this project on you machine, first make sure you got [rust](https://www.rust-lang.org/)
@@ -98,7 +106,13 @@ After that, an executable will be generated in the folder
 
 
 ## TODOS
-- [ ] Add support for comments
+- [x] Add support for math expressions
+- [x] Add support for return statements
+- [x] Add support for if-else expressions
+- [x] Add support for function expressions
+- [x] Add support for comments
+- [x] Add support for boolean expressions
+- [x] Add support for let statements
 - [ ] Add standard library
 - [ ] Add loops
 - [ ] Add support for arrays
