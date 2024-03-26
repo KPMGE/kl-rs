@@ -46,13 +46,19 @@ impl Lexer {
             '}' => Token::RightBrace,
             '+' => Token::Plus,
             '-' => Token::Minus,
-            '*' => Token::Asterisk,
             '<' => Token::LessThan,
             '>' => Token::GreaterThan,
             ',' => Token::Comma,
-            '/' => Token::Slash,
             ';' => Token::Semicolon,
             '"' => Token::String(self.read_string()),
+            '*' => Token::Asterisk,
+            '/' => {
+                if self.peek_char(self.read_position).unwrap() == '*' {
+                    self.skip_comments();
+                    return self.next_token();
+                }
+                Token::Slash
+            }
             '=' => match self.peek_char(self.read_position) {
                 Some('=') => {
                     self.read_char();
@@ -168,6 +174,19 @@ impl Lexer {
             }
             break;
         }
+    }
+
+    fn skip_comments(&mut self) {
+        while let (Some(ch), Some(next_ch)) =
+            (self.current_char, self.peek_char(self.read_position))
+        {
+            if ch == '*' && next_ch == '/' {
+                break;
+            }
+            self.read_char();
+        }
+        self.read_char();
+        self.read_char();
     }
 }
 
