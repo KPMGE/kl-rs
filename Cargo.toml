@@ -5,3 +5,4 @@ edition = "2021"
 
 [dependencies]
 gflags = "0.3.12"
+lazy_static = "1.4.0"

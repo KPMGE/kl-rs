@@ -1,13 +1,31 @@
 use crate::ast::{AstNode, BlockStatement, Expression, Statement};
 use crate::token::Token;
 use std::collections::HashMap;
+use lazy_static::lazy_static;
 
 #[derive(Default)]
 pub struct Evaluator {
     context: HashMap<String, Object>,
 }
 
-type BuiltInFn = fn(Vec<Object>) -> Object;
+type BuiltinFn = fn(Vec<Object>) -> Object;
+
+fn len(args: Vec<Object>) -> Object {
+    let first_obj = args
+        .first()
+        .expect("len function must be provided a string argument!");
+
+    match first_obj {
+        Object::String(str) => Object::Integer(str.len() as i32),
+        _ => panic!("len function must be provided a string argument!"),
+    }
+}
+
+lazy_static! {
+    static ref BUILTIN_FUNCTIONS: HashMap<&'static str, BuiltinFn> = {
+        HashMap::from([("len", len as BuiltinFn)]) 
+    };
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Object {
@@ -15,13 +33,13 @@ pub enum Object {
     Boolean(bool),
     String(String),
     Return(Box<Object>),
-    BuiltIn(BuiltInFn),
+    Builtin(BuiltinFn),
+    Null,
     Function {
         parameters: Vec<Token>,
         body: BlockStatement,
         scope: HashMap<String, Object>,
     },
-    Null,
 }
 
 impl Evaluator {
@@ -91,7 +109,7 @@ impl Evaluator {
                 let function = self.eval(AstNode::Expression(*function));
 
                 match function {
-                    Object::BuiltIn(builtin_fn) => {
+                    Object::Builtin(builtin_fn) => {
                         let args = self.eval_expressions(arguments);
                         builtin_fn(args)
                     }
@@ -107,20 +125,8 @@ impl Evaluator {
     }
 
     fn eval_identifier(&mut self, name: String) -> Object {
-        let mut builtin_functions = HashMap::new();
-        builtin_functions.insert("len".to_string(), |args: Vec<Object>| {
-            let first_obj = args
-                .first()
-                .expect("len function must be provided a string argument!");
-
-            match first_obj {
-                Object::String(str) => Object::Integer(str.len() as i32),
-                _ => panic!("len function must be provided a string argument!"),
-            }
-        });
-
-        if let Some(function) = builtin_functions.get(&name) {
-            return Object::BuiltIn(*function);
+        if let Some(function) = BUILTIN_FUNCTIONS.get(name.as_str()) {
+            return Object::Builtin(*function);
         }
 
         self.context
@@ -264,7 +270,7 @@ impl Object {
             Object::String(value) => value.to_string(),
             Object::Return(value) => value.inspect(),
             Object::Function { .. } => "function".to_string(),
-            Object::BuiltIn(..) => "null".to_string(),
+            Object::Builtin(..) => "null".to_string(),
             Object::Null => "null".to_string(),
         }
     }
