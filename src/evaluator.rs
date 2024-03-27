@@ -1,30 +1,12 @@
 use crate::ast::{AstNode, BlockStatement, Expression, Statement};
 use crate::token::Token;
 use std::collections::HashMap;
-use lazy_static::lazy_static;
+
+use crate::builtin::{BuiltinFn, BUILTIN_FUNCTIONS};
 
 #[derive(Default)]
 pub struct Evaluator {
     context: HashMap<String, Object>,
-}
-
-type BuiltinFn = fn(Vec<Object>) -> Object;
-
-fn len(args: Vec<Object>) -> Object {
-    let first_obj = args
-        .first()
-        .expect("len function must be provided a string argument!");
-
-    match first_obj {
-        Object::String(str) => Object::Integer(str.len() as i32),
-        _ => panic!("len function must be provided a string argument!"),
-    }
-}
-
-lazy_static! {
-    static ref BUILTIN_FUNCTIONS: HashMap<&'static str, BuiltinFn> = {
-        HashMap::from([("len", len as BuiltinFn)]) 
-    };
 }
 
 #[derive(Debug, Clone, PartialEq)]
