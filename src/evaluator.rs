@@ -7,12 +7,15 @@ pub struct Evaluator {
     context: HashMap<String, Object>,
 }
 
+type BuiltInFn = fn(Vec<Object>) -> Object;
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Object {
     Integer(i32),
     Boolean(bool),
     String(String),
     Return(Box<Object>),
+    BuiltIn(BuiltInFn),
     Function {
         parameters: Vec<Token>,
         body: BlockStatement,
@@ -72,11 +75,7 @@ impl Evaluator {
 
                 Object::Null
             }
-            Expression::Identifier(let_name) => self
-                .context
-                .get(&let_name)
-                .expect("ERROR: Could not find identifer")
-                .clone(),
+            Expression::Identifier(name) => self.eval_identifier(name),
             Expression::FunctionExpression {
                 parameters, body, ..
             } => Object::Function {
@@ -92,6 +91,10 @@ impl Evaluator {
                 let function = self.eval(AstNode::Expression(*function));
 
                 match function {
+                    Object::BuiltIn(builtin_fn) => {
+                        let args = self.eval_expressions(arguments);
+                        builtin_fn(args)
+                    }
                     Object::Function {
                         parameters,
                         body,
@@ -101,6 +104,29 @@ impl Evaluator {
                 }
             }
         }
+    }
+
+    fn eval_identifier(&mut self, name: String) -> Object {
+        let mut builtin_functions = HashMap::new();
+        builtin_functions.insert("len".to_string(), |args: Vec<Object>| {
+            let first_obj = args
+                .first()
+                .expect("len function must be provided a string argument!");
+
+            match first_obj {
+                Object::String(str) => Object::Integer(str.len() as i32),
+                _ => panic!("len function must be provided a string argument!"),
+            }
+        });
+
+        if let Some(function) = builtin_functions.get(&name) {
+            return Object::BuiltIn(*function);
+        }
+
+        self.context
+            .get(&name)
+            .expect("ERROR: Could not find identifer")
+            .clone()
     }
 
     fn eval_function_call(
@@ -238,6 +264,7 @@ impl Object {
             Object::String(value) => value.to_string(),
             Object::Return(value) => value.inspect(),
             Object::Function { .. } => "function".to_string(),
+            Object::BuiltIn(..) => "null".to_string(),
             Object::Null => "null".to_string(),
         }
     }
