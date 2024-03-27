@@ -2,6 +2,8 @@ use crate::ast::{AstNode, BlockStatement, Expression, Statement};
 use crate::token::Token;
 use std::collections::HashMap;
 
+use crate::builtin::{BuiltinFn, BUILTIN_FUNCTIONS};
+
 #[derive(Default)]
 pub struct Evaluator {
     context: HashMap<String, Object>,
@@ -13,12 +15,13 @@ pub enum Object {
     Boolean(bool),
     String(String),
     Return(Box<Object>),
+    Builtin(BuiltinFn),
+    Null,
     Function {
         parameters: Vec<Token>,
         body: BlockStatement,
         scope: HashMap<String, Object>,
     },
-    Null,
 }
 
 impl Evaluator {
@@ -72,11 +75,7 @@ impl Evaluator {
 
                 Object::Null
             }
-            Expression::Identifier(let_name) => self
-                .context
-                .get(&let_name)
-                .expect("ERROR: Could not find identifer")
-                .clone(),
+            Expression::Identifier(name) => self.eval_identifier(name),
             Expression::FunctionExpression {
                 parameters, body, ..
             } => Object::Function {
@@ -92,6 +91,10 @@ impl Evaluator {
                 let function = self.eval(AstNode::Expression(*function));
 
                 match function {
+                    Object::Builtin(builtin_fn) => {
+                        let args = self.eval_expressions(arguments);
+                        builtin_fn(args)
+                    }
                     Object::Function {
                         parameters,
                         body,
@@ -101,6 +104,17 @@ impl Evaluator {
                 }
             }
         }
+    }
+
+    fn eval_identifier(&mut self, name: String) -> Object {
+        if let Some(function) = BUILTIN_FUNCTIONS.get(name.as_str()) {
+            return Object::Builtin(*function);
+        }
+
+        self.context
+            .get(&name)
+            .expect("ERROR: Could not find identifer")
+            .clone()
     }
 
     fn eval_function_call(
@@ -238,6 +252,7 @@ impl Object {
             Object::String(value) => value.to_string(),
             Object::Return(value) => value.inspect(),
             Object::Function { .. } => "function".to_string(),
+            Object::Builtin(..) => "null".to_string(),
             Object::Null => "null".to_string(),
         }
     }
