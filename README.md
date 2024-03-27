@@ -123,7 +123,7 @@ After that, an executable will be generated in the folder
 - [x] Add support for comments
 - [x] Add support for boolean expressions
 - [x] Add support for let statements
-- [ ] Add standard library
+- [x] Add standard library len function
 - [ ] Add loops
 - [ ] Add support for arrays
 - [ ] Add build in functions
