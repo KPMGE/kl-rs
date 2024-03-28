@@ -2,6 +2,20 @@ use std::collections::HashMap;
 
 use crate::token::Token;
 
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref KEYWORDS: HashMap<&'static str, Token> = HashMap::from([
+        ("fn", Token::Function),
+        ("let", Token::Let),
+        ("if", Token::If),
+        ("else", Token::Else),
+        ("true", Token::True),
+        ("false", Token::False),
+        ("return", Token::Return),
+    ]);
+}
+
 #[derive(Debug, Clone)]
 pub struct Lexer {
     input: String,
@@ -21,16 +35,6 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Token {
-        let keywords_map = HashMap::from([
-            ("fn", Token::Function),
-            ("let", Token::Let),
-            ("if", Token::If),
-            ("else", Token::Else),
-            ("true", Token::True),
-            ("false", Token::False),
-            ("return", Token::Return),
-        ]);
-
         self.skip_whitespaces();
 
         if self.current_char.is_none() {
@@ -76,7 +80,7 @@ impl Lexer {
             c => {
                 if c.is_letter() {
                     let identifier = self.read_identifier();
-                    return match keywords_map.get(&identifier.as_str()) {
+                    return match KEYWORDS.get(&identifier.as_str()) {
                         Some(tok) => tok.clone(),
                         None => Token::Identifier(identifier),
                     };
