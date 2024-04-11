@@ -2,7 +2,7 @@ use kl_rs::{lexer::Lexer, token::Token};
 
 #[test]
 fn given_code_with_single_characters_it_should_parse_correctly() {
-    let code = "{}()+=,-!*/><;";
+    let code = "{}()+=,-!*/><;[]";
     let expected_tokens = vec![
         Token::LeftBrace,
         Token::RightBrace,
@@ -18,6 +18,8 @@ fn given_code_with_single_characters_it_should_parse_correctly() {
         Token::GreaterThan,
         Token::LessThan,
         Token::Semicolon,
+        Token::LeftBracket,
+        Token::RightBracket,
         Token::Eof,
     ];
 
