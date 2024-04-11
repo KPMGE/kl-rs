@@ -41,6 +41,7 @@ impl Evaluator {
 
     fn eval_expression(&mut self, expression: Expression) -> Object {
         match expression {
+            Expression::Array(_arr) => Object::Null,
             Expression::Int(value) => Object::Integer(value),
             Expression::Boolean(value) => Object::Boolean(value),
             Expression::String(value) => Object::String(value),
