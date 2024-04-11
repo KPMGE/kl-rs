@@ -25,6 +25,8 @@ pub enum Token {
     RightParentesis,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
     Int(String),
     Identifier(String),
     String(String),
