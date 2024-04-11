@@ -459,15 +459,15 @@ fn given_a_string_expression_it_should_parse_correctly() {
 #[test]
 fn given_an_array_expression_it_should_parse_correctly() {
     let code = "[1, 1 + 2, \"kevin\"]";
-    let expected_expression = Expression::Array(Box::new(vec![
+    let expected_expression = Expression::Array(vec![
         Expression::Int(1),
-        Expression::Infix { 
+        Expression::Infix {
             operator: Token::Plus,
             left: Box::new(Expression::Int(1)),
-            right: Box::new(Expression::Int(2))
+            right: Box::new(Expression::Int(2)),
         },
-        Expression::String("kevin".to_string())
-    ]));
+        Expression::String("kevin".to_string()),
+    ]);
 
     let lexer = Lexer::new(code.to_string());
     let mut parser = Parser::new(lexer);

@@ -198,7 +198,7 @@ impl Parser {
         let mut elements = Vec::new();
 
         if self.current_token == Token::RightBracket {
-            return Some(Expression::Array(Box::new(elements)));
+            return Some(Expression::Array(elements));
         }
 
         let exp = self.parse_expression(Precedence::Lowest)?;
@@ -219,7 +219,7 @@ impl Parser {
             return None;
         }
 
-        Some(Expression::Array(Box::new(elements)))
+        Some(Expression::Array(elements))
     }
 
     fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
