@@ -196,9 +196,28 @@ fn given_an_array_expression_should_evaluate_correctly() {
 }
 
 #[test]
-fn given_an_index_expression_should_evaluate_correctly() {
+fn given_an_array_index_expression_should_evaluate_correctly() {
     let code = "[1, 2, 3][1]";
     let expected_obj = Object::Integer(2);
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+    let parsed_program = parser.parse_program();
+    let node = match parsed_program {
+        AstNode::Program { statements } => statements.first().unwrap().clone(),
+        _ => panic!("Unexpected AstNode!"),
+    };
+
+    let mut evaluator = Evaluator::new();
+    let evaluated_obj = evaluator.eval(node);
+
+    assert_eq!(evaluated_obj, expected_obj);
+}
+
+#[test]
+fn given_a_string_index_expression_should_evaluate_correctly() {
+    let code = "\"hello world\"[0]";
+    let expected_obj = Object::Char('h');
 
     let lexer = Lexer::new(code.to_string());
     let mut parser = Parser::new(lexer);
