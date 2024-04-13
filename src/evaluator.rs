@@ -14,6 +14,7 @@ pub enum Object {
     Integer(i32),
     Boolean(bool),
     String(String),
+    Char(char),
     Array(Vec<Object>),
     Return(Box<Object>),
     Builtin(BuiltinFn),
@@ -45,7 +46,9 @@ impl Evaluator {
             Expression::Int(value) => Object::Integer(value),
             Expression::Boolean(value) => Object::Boolean(value),
             Expression::String(value) => Object::String(value),
-            Expression::Index { idx, left } => self.eval_index_expression(idx, left),
+            Expression::Index { idx, left } => self
+                .eval_index_expression(*idx, *left)
+                .unwrap_or(Object::Null),
             Expression::Array(elems) => {
                 let elements = self.eval_expressions(elems);
                 Object::Array(elements)
@@ -112,17 +115,19 @@ impl Evaluator {
         }
     }
 
-    fn eval_index_expression(&mut self, idx: Box<Expression>, left: Box<Expression>) -> Object {
-        let idx_obj = self.eval_expression(*idx);
-        let left_obj = self.eval_expression(*left);
+    fn eval_index_expression(&mut self, idx: Expression, left: Expression) -> Option<Object> {
+        let idx_obj = self.eval_expression(idx);
+        let left_obj = self.eval_expression(left);
 
-        if let (Object::Integer(idx_num), Object::Array(elements)) = (idx_obj, left_obj) {
-            return elements
-                .get(idx_num as usize)
-                .unwrap_or(&Object::Null)
-                .clone();
+        match (idx_obj, left_obj) {
+            (Object::Integer(idx_num), Object::Array(elements)) => {
+                Some(elements.get(idx_num as usize)?.clone())
+            }
+            (Object::Integer(idx_num), Object::String(str)) => {
+                Some(Object::Char(str.chars().nth(idx_num as usize)?))
+            }
+            _ => None,
         }
-        Object::Null
     }
 
     fn eval_identifier(&mut self, name: String) -> Object {
@@ -268,7 +273,8 @@ impl Object {
         match self {
             Object::Integer(value) => format!("{value}"),
             Object::Boolean(value) => format!("{value}"),
-            Object::String(value) => value.to_string(),
+            Object::String(str) => format!("\"{}\"", str),
+            Object::Char(c) => format!("'{}'", c),
             Object::Return(value) => value.inspect(),
             Object::Function { .. } => "function".to_string(),
             Object::Builtin(..) => "null".to_string(),
