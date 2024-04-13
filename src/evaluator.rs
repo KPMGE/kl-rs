@@ -42,13 +42,14 @@ impl Evaluator {
 
     fn eval_expression(&mut self, expression: Expression) -> Object {
         match expression {
+            Expression::Int(value) => Object::Integer(value),
+            Expression::Boolean(value) => Object::Boolean(value),
+            Expression::String(value) => Object::String(value),
+            Expression::Index { .. } => Object::Null,
             Expression::Array(elems) => {
                 let elements = self.eval_expressions(elems);
                 Object::Array(elements)
             }
-            Expression::Int(value) => Object::Integer(value),
-            Expression::Boolean(value) => Object::Boolean(value),
-            Expression::String(value) => Object::String(value),
             Expression::Prefix { operator, right } => {
                 let right = self.eval(AstNode::Expression(*right));
                 self.eval_prefix_expression(operator, right)
@@ -261,7 +262,7 @@ impl Object {
             Object::Null => "null".to_string(),
             Object::Array(elems) => {
                 let elements_str = elems
-                    .into_iter()
+                    .iter()
                     .map(|e| e.inspect())
                     .collect::<Vec<String>>()
                     .join(", ");

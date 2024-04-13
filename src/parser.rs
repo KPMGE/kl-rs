@@ -13,6 +13,7 @@ enum Precedence {
     Product,
     Prefix,
     Call,
+    Index,
 }
 
 #[derive(Debug, Clone)]
@@ -143,6 +144,26 @@ impl Parser {
         }
 
         Some(left_expression)
+    }
+
+    fn parse_index_expresssion(&mut self, left: Expression) -> Option<Expression> {
+        if !self.expect_current_token(Token::LeftBracket) {
+            self.report_expected_token_error(Token::LeftBracket, self.current_token.clone());
+            return None;
+        }
+
+        let idx = self.parse_expression(Precedence::Lowest)?;
+        self.advance_tokens();
+
+        if !self.expect_current_token(Token::RightBracket) {
+            self.report_expected_token_error(Token::RightBracket, self.current_token.clone());
+            return None;
+        }
+
+        Some(Expression::Index {
+            idx: Box::new(idx),
+            left: Box::new(left),
+        })
     }
 
     fn expect_current_token(&mut self, token: Token) -> bool {
@@ -441,9 +462,10 @@ impl Parser {
 impl Token {
     fn precedence(&self) -> Precedence {
         match self {
+            Token::LeftParentesis => Precedence::Call,
+            Token::LeftBracket => Precedence::Index,
             Token::Equals | Token::NotEquals => Precedence::Equals,
             Token::Plus | Token::Minus => Precedence::Sum,
-            Token::LeftParentesis => Precedence::Call,
             Token::Asterisk | Token::Slash => Precedence::Product,
             Token::LessThan | Token::GreaterThan => Precedence::LessGreater,
             _ => Precedence::Lowest,
@@ -477,6 +499,7 @@ impl Token {
             Token::Equals => Some(Parser::parse_infix_expression),
             Token::NotEquals => Some(Parser::parse_infix_expression),
             Token::LeftParentesis => Some(Parser::parse_call_expression),
+            Token::LeftBracket => Some(Parser::parse_index_expresssion),
             _ => None,
         }
     }

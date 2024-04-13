@@ -490,6 +490,39 @@ fn given_an_array_expression_it_should_parse_correctly() {
     }
 }
 
+#[test]
+fn given_an_index_expression_it_should_parse_correctly() {
+    let code = "arr[2 * 5]";
+    let expected_expression = Expression::Index {
+        idx: Box::new(Expression::Infix {
+            operator: Token::Asterisk,
+            left: Box::new(Expression::Int(2)),
+            right: Box::new(Expression::Int(5)),
+        }),
+        left: Box::new(Expression::Identifier("arr".to_string())),
+    };
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+    let parsed_program = parser.parse_program();
+
+    assert_eq!(parser.errors.len(), 0);
+
+    match parsed_program {
+        AstNode::Program { statements } => {
+            assert_eq!(statements.len(), 1);
+
+            let statement = statements.first().unwrap();
+
+            match statement {
+                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                _ => panic!("Unexpected expression!"),
+            }
+        }
+        _ => panic!("Unexpected AstNode!"),
+    }
+}
+
 fn assert_boolean_expression(code: &str, expected_expression: &Expression) {
     let lexer = Lexer::new(code.to_string());
     let mut parser = Parser::new(lexer);
