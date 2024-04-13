@@ -45,7 +45,7 @@ impl Evaluator {
             Expression::Int(value) => Object::Integer(value),
             Expression::Boolean(value) => Object::Boolean(value),
             Expression::String(value) => Object::String(value),
-            Expression::Index { .. } => Object::Null,
+            Expression::Index { idx, left } => self.eval_index_expression(idx, left),
             Expression::Array(elems) => {
                 let elements = self.eval_expressions(elems);
                 Object::Array(elements)
@@ -110,6 +110,19 @@ impl Evaluator {
                 }
             }
         }
+    }
+
+    fn eval_index_expression(&mut self, idx: Box<Expression>, left: Box<Expression>) -> Object {
+        let idx_obj = self.eval_expression(*idx);
+        let left_obj = self.eval_expression(*left);
+
+        if let (Object::Integer(idx_num), Object::Array(elements)) = (idx_obj, left_obj) {
+            return elements
+                .get(idx_num as usize)
+                .unwrap_or(&Object::Null)
+                .clone();
+        }
+        Object::Null
     }
 
     fn eval_identifier(&mut self, name: String) -> Object {
