@@ -173,11 +173,7 @@ fn given_a_string_expression_when_calling_len_it_should_evaluate_correctly() {
 #[test]
 fn given_an_array_expression_should_evaluate_correctly() {
     let code = "[1, 2, 3]";
-    let expected_objs = vec![
-        Object::Integer(1),
-        Object::Integer(2),
-        Object::Integer(3),
-    ];
+    let expected_objs = vec![Object::Integer(1), Object::Integer(2), Object::Integer(3)];
 
     let lexer = Lexer::new(code.to_string());
     let mut parser = Parser::new(lexer);
