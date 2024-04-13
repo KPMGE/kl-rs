@@ -235,7 +235,7 @@ impl Parser {
 
         self.advance_tokens();
 
-        if !self.expect_current_token(Token::RightBracket) {
+        if self.current_token != Token::RightBracket {
             self.report_expected_token_error(Token::RightBracket, self.current_token.clone());
             return None;
         }
