@@ -65,6 +65,16 @@ let foo = fn(...) { return "foo" };
 foo(); # "foo"
 ```
 
+#### Indexing function
+As a string can be seen as a list of characters, it's possible to index a
+string just like you do for arrays: 
+
+```bash
+let str = "hello world";
+str[0] # 'h'
+str[1] # 'e'
+```
+
 ### Booleans
 In this language, there is support for `true` and `false` booleans, they can be
 used as you would expect!
@@ -82,7 +92,23 @@ It's possible to comment code out using the syntax:
 
 This syntax works for both, single line and multiline comments!
 
+### Arrays
+It's possible to create arrays, in this language they're represented just like
+in most languages using the **[]** symbols.
 
+```bash
+let arr [1, 2, 3];
+```
+
+##### Indexing
+Given an arrays, it's possible to index it and get the nth element back. If no
+element exists at that index, a null will be returned.
+```bash
+let arr [1, 2, 3];
+arr[0] # 1
+arr[1] # 2
+arr[9999] # null
+```
 
 ## How to run it?
 In order to run this project on you machine, first make sure you got [rust](https://www.rust-lang.org/)
@@ -124,8 +150,8 @@ After that, an executable will be generated in the folder
 - [x] Add support for boolean expressions
 - [x] Add support for let statements
 - [x] Add standard library len function
+- [x] Add support for arrays
 - [ ] Add loops
-- [ ] Add support for arrays
 - [ ] Add build in functions
 - [ ] Add support for hashes
 - [ ] Refactor tests
