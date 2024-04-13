@@ -169,3 +169,51 @@ fn given_a_string_expression_when_calling_len_it_should_evaluate_correctly() {
 
     assert_eq!(evaluated_obj, expected_obj);
 }
+
+#[test]
+fn given_an_array_expression_should_evaluate_correctly() {
+    let code = "[1, 2, 3]";
+    let expected_objs = vec![
+        Object::Integer(1),
+        Object::Integer(2),
+        Object::Integer(3),
+    ];
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+    let parsed_program = parser.parse_program();
+    let node = match parsed_program {
+        AstNode::Program { statements } => statements.first().unwrap().clone(),
+        _ => panic!("Unexpected AstNode!"),
+    };
+
+    let mut evaluator = Evaluator::new();
+    let evaluated_obj = evaluator.eval(node);
+
+    if let Object::Array(elems) = evaluated_obj {
+        for (expected_obj, evaluated_obj) in expected_objs.iter().zip(elems.iter()) {
+            assert_eq!(expected_obj, evaluated_obj);
+        }
+    } else {
+        panic!("Unexpected object!")
+    }
+}
+
+#[test]
+fn given_an_index_expression_should_evaluate_correctly() {
+    let code = "[1, 2, 3][1]";
+    let expected_obj = Object::Integer(2);
+
+    let lexer = Lexer::new(code.to_string());
+    let mut parser = Parser::new(lexer);
+    let parsed_program = parser.parse_program();
+    let node = match parsed_program {
+        AstNode::Program { statements } => statements.first().unwrap().clone(),
+        _ => panic!("Unexpected AstNode!"),
+    };
+
+    let mut evaluator = Evaluator::new();
+    let evaluated_obj = evaluator.eval(node);
+
+    assert_eq!(evaluated_obj, expected_obj);
+}
