@@ -110,6 +110,28 @@ arr[1] # 2
 arr[9999] # null
 ```
 
+
+### Indexes
+Indexes in this language are also expressions, so you can use any expression
+that makes sense to compute the index value and it will be evaluated. That
+expression can be a math expression, a function call or literaly any expression
+at all. But, it should be noticed that, depending on the datastructure used,
+it's important to use the index with an expression that evaluates to the correct
+value.
+
+For example, when indexing an array, it doesn't make sense to use a String
+expression, but when indexing a hash, it does. So just make sure to use the
+right expression for each datastructure. 
+
+If the wrong type is used, a **null** will be returned right away.
+```bash
+let arr = [1, 2, 3];
+arr[1] # 2
+arr[1 * 2] # 3
+arr[sum(1, 1)] # 3
+arr["hello world"] # null
+```
+
 ## How to run it?
 In order to run this project on you machine, first make sure you got [rust](https://www.rust-lang.org/)
 correctly installed.

@@ -1,6 +1,5 @@
 use crate::{
     ast::{AstNode, BlockStatement, Expression, Statement},
-    lexer::Lexer,
     token::Token,
 };
 
@@ -17,17 +16,23 @@ enum Precedence {
 }
 
 #[derive(Debug, Clone)]
-pub struct Parser {
+pub struct Parser<L>
+where
+    L: Iterator<Item = Token>,
+{
     pub errors: Vec<String>,
-    lexer: Lexer,
+    lexer: L,
     current_token: Token,
     next_token: Token,
 }
 
-impl Parser {
-    pub fn new(mut lexer: Lexer) -> Self {
-        let current_token = lexer.next_token();
-        let next_token = lexer.next_token();
+impl<L> Parser<L>
+where
+    L: Iterator<Item = Token>,
+{
+    pub fn new(mut lexer: L) -> Self {
+        let current_token = lexer.next().unwrap();
+        let next_token = lexer.next().unwrap();
 
         Parser {
             lexer,
@@ -444,7 +449,7 @@ impl Parser {
 
     fn advance_tokens(&mut self) {
         self.current_token = self.next_token.clone();
-        self.next_token = self.lexer.next_token();
+        self.next_token = self.lexer.next().unwrap();
     }
 
     fn report_expected_token_error(&mut self, expected_token: Token, actual_token: Token) {
@@ -472,7 +477,10 @@ impl Token {
         }
     }
 
-    fn prefix_parse_fn(&self) -> Option<fn(&mut Parser) -> Option<Expression>> {
+    fn prefix_parse_fn<L>(&self) -> Option<fn(&mut Parser<L>) -> Option<Expression>>
+    where
+        L: Iterator<Item = Token>,
+    {
         match self {
             Token::String(_) => Some(Parser::parse_string),
             Token::Identifier(_) => Some(Parser::parse_identifier),
@@ -488,7 +496,10 @@ impl Token {
         }
     }
 
-    fn get_infix_parse_fn(&self) -> Option<fn(&mut Parser, Expression) -> Option<Expression>> {
+    fn get_infix_parse_fn<L>(&self) -> Option<fn(&mut Parser<L>, Expression) -> Option<Expression>>
+    where
+        L: Iterator<Item = Token>,
+    {
         match self {
             Token::Plus => Some(Parser::parse_infix_expression),
             Token::Minus => Some(Parser::parse_infix_expression),

@@ -203,3 +203,75 @@ impl IsLetter for char {
         self.is_ascii_lowercase() || self.is_ascii_uppercase()
     }
 }
+
+impl Iterator for Lexer {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.skip_whitespaces();
+
+        if self.current_char.is_none() {
+            return Some(Token::Eof);
+        }
+
+        let ch = self.current_char.unwrap();
+
+        let token = match ch {
+            '(' => Token::LeftParentesis,
+            ')' => Token::RightParentesis,
+            '{' => Token::LeftBrace,
+            '}' => Token::RightBrace,
+            '+' => Token::Plus,
+            '-' => Token::Minus,
+            '<' => Token::LessThan,
+            '>' => Token::GreaterThan,
+            ',' => Token::Comma,
+            ';' => Token::Semicolon,
+            '"' => Token::String(self.read_string()),
+            '*' => Token::Asterisk,
+            '[' => Token::LeftBracket,
+            ']' => Token::RightBracket,
+            '/' => {
+                if self.peek_char(self.read_position).unwrap() == '*' {
+                    self.skip_comments();
+                    return Some(self.next_token());
+                }
+                Token::Slash
+            }
+            '=' => match self.peek_char(self.read_position) {
+                Some('=') => {
+                    self.read_char();
+                    Token::Equals
+                }
+                _ => Token::Assign,
+            },
+            '!' => match self.peek_char(self.read_position) {
+                Some('=') => {
+                    self.read_char();
+                    Token::NotEquals
+                }
+                _ => Token::Bang,
+            },
+            c => {
+                if c.is_letter() {
+                    let identifier = self.read_identifier();
+                    return match KEYWORDS.get(&identifier.as_str()) {
+                        Some(tok) => Some(tok.clone()),
+                        None => Some(Token::Identifier(identifier)),
+                    };
+                }
+
+                if c.is_ascii_digit() {
+                    let num = self.read_number();
+                    return Some(Token::Int(num.to_string()));
+                }
+
+                Token::Illegal
+            }
+        };
+
+        self.read_char();
+        Some(token)
+    }
+}
+
