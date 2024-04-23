@@ -189,6 +189,39 @@ impl Parser {
         None
     }
 
+    fn parse_array_expression(&mut self) -> Option<Expression> {
+        if !self.expect_current_token(Token::LeftBracket) {
+            self.report_expected_token_error(Token::LeftBracket, self.current_token.clone());
+            return None;
+        }
+
+        let mut elements = Vec::new();
+
+        if self.current_token == Token::RightBracket {
+            return Some(Expression::Array(elements));
+        }
+
+        let exp = self.parse_expression(Precedence::Lowest)?;
+        elements.push(exp);
+
+        while self.next_token == Token::Comma {
+            self.advance_tokens();
+            self.advance_tokens();
+
+            let exp = self.parse_expression(Precedence::Lowest)?;
+            elements.push(exp);
+        }
+
+        self.advance_tokens();
+
+        if !self.expect_current_token(Token::RightBracket) {
+            self.report_expected_token_error(Token::RightBracket, self.current_token.clone());
+            return None;
+        }
+
+        Some(Expression::Array(elements))
+    }
+
     fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
         let operator = self.current_token.clone();
         let precedence = self.next_token.precedence();
@@ -424,6 +457,7 @@ impl Token {
             Token::Int(_) => Some(Parser::parse_int),
             Token::Bang => Some(Parser::parse_prefix_expression),
             Token::LeftParentesis => Some(Parser::parse_grouped_expression),
+            Token::LeftBracket => Some(Parser::parse_array_expression),
             Token::Minus => Some(Parser::parse_prefix_expression),
             Token::True | Token::False => Some(Parser::parse_boolean_expression),
             Token::If => Some(Parser::parse_if_expression),

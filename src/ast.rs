@@ -6,6 +6,7 @@ pub enum Expression {
     Identifier(String),
     Boolean(bool),
     String(String),
+    Array(Vec<Expression>),
     Prefix {
         operator: Token,
         right: Box<Expression>,

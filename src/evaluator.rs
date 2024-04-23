@@ -14,6 +14,7 @@ pub enum Object {
     Integer(i32),
     Boolean(bool),
     String(String),
+    Array(Vec<Object>),
     Return(Box<Object>),
     Builtin(BuiltinFn),
     Null,
@@ -41,6 +42,10 @@ impl Evaluator {
 
     fn eval_expression(&mut self, expression: Expression) -> Object {
         match expression {
+            Expression::Array(elems) => {
+                let elements = self.eval_expressions(elems);
+                Object::Array(elements)
+            }
             Expression::Int(value) => Object::Integer(value),
             Expression::Boolean(value) => Object::Boolean(value),
             Expression::String(value) => Object::String(value),
@@ -254,6 +259,15 @@ impl Object {
             Object::Function { .. } => "function".to_string(),
             Object::Builtin(..) => "null".to_string(),
             Object::Null => "null".to_string(),
+            Object::Array(elems) => {
+                let elements_str = elems
+                    .into_iter()
+                    .map(|e| e.inspect())
+                    .collect::<Vec<String>>()
+                    .join(", ");
+
+                format!("[{}]", elements_str)
+            }
         }
     }
 

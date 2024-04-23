@@ -56,6 +56,8 @@ impl Lexer {
             ';' => Token::Semicolon,
             '"' => Token::String(self.read_string()),
             '*' => Token::Asterisk,
+            '[' => Token::LeftBracket,
+            ']' => Token::RightBracket,
             '/' => {
                 if self.peek_char(self.read_position).unwrap() == '*' {
                     self.skip_comments();
