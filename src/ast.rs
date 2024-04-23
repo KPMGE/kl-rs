@@ -6,7 +6,7 @@ pub enum Expression {
     Identifier(String),
     Boolean(bool),
     String(String),
-    Array(Vec<Expression>),
+    Array(Vec<Box<Expression>>),
     Index {
         idx: Box<Expression>,
         left: Box<Expression>,
@@ -22,33 +22,33 @@ pub enum Expression {
     },
     IfExpression {
         condition: Box<AstNode>,
-        consequence: BlockStatement,
-        alternative: Option<BlockStatement>,
+        consequence: Box<BlockStatement>,
+        alternative: Option<Box<BlockStatement>>,
     },
     FunctionExpression {
         parameters: Vec<Token>,
-        body: BlockStatement,
+        body: Box<BlockStatement>,
     },
     CallExpression {
         function: Box<Expression>,
-        arguments: Vec<Expression>,
+        arguments: Vec<Box<Expression>>,
     },
 }
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub struct BlockStatement {
-    pub statements: Vec<AstNode>,
+    pub statements: Vec<Box<AstNode>>,
 }
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Statement {
-    ReturnStatement(Expression),
-    LetStatement { name: Expression, value: Expression },
+    ReturnStatement(Box<Expression>),
+    LetStatement { name: Box<Expression>, value: Box<Expression> },
 }
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum AstNode {
-    Statement(Statement),
-    Expression(Expression),
-    Program { statements: Vec<AstNode> },
+    Statement(Box<Statement>),
+    Expression(Box<Expression>),
+    Program { statements: Vec<Box<AstNode>> },
 }

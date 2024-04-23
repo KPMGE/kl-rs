@@ -42,7 +42,7 @@ where
         }
     }
 
-    pub fn parse_program(&mut self) -> AstNode {
+    pub fn parse_program(&mut self) -> Box<AstNode> {
         let mut program = AstNode::Program {
             statements: Vec::new(),
         };
@@ -72,10 +72,10 @@ where
             self.advance_tokens();
         }
 
-        program
+        Box::new(program)
     }
 
-    fn parse_let_statement(&mut self) -> Option<AstNode> {
+    fn parse_let_statement(&mut self) -> Option<Box<AstNode>> {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Identifier(_)) {
@@ -106,20 +106,22 @@ where
             return None;
         }
 
-        Some(AstNode::Statement(Statement::LetStatement { name, value }))
+        Some(Box::new(AstNode::Statement(Box::new(
+            Statement::LetStatement { name, value },
+        ))))
     }
 
-    fn parse_expression_statement(&mut self) -> Option<AstNode> {
+    fn parse_expression_statement(&mut self) -> Option<Box<AstNode>> {
         let expression = self.parse_expression(Precedence::Lowest)?;
 
         if self.current_token == Token::Semicolon {
             self.advance_tokens();
         }
 
-        Some(AstNode::Expression(expression))
+        Some(Box::new(AstNode::Expression(expression)))
     }
 
-    fn parse_return_statement(&mut self) -> Option<AstNode> {
+    fn parse_return_statement(&mut self) -> Option<Box<AstNode>> {
         self.advance_tokens();
 
         if !matches!(self.current_token, Token::Int(_)) {
@@ -132,10 +134,12 @@ where
 
         let expression = self.parse_expression(Precedence::Lowest)?;
 
-        Some(AstNode::Statement(Statement::ReturnStatement(expression)))
+        Some(Box::new(AstNode::Statement(Box::new(
+            Statement::ReturnStatement(expression),
+        ))))
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
+    fn parse_expression(&mut self, precedence: Precedence) -> Option<Box<Expression>> {
         let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
         let left_expression = prefix_parse_fn(self)?;
 
@@ -151,7 +155,7 @@ where
         Some(left_expression)
     }
 
-    fn parse_index_expresssion(&mut self, left: Expression) -> Option<Expression> {
+    fn parse_index_expresssion(&mut self, left: Box<Expression>) -> Option<Box<Expression>> {
         if !self.expect_current_token(Token::LeftBracket) {
             self.report_expected_token_error(Token::LeftBracket, self.current_token.clone());
             return None;
@@ -165,10 +169,7 @@ where
             return None;
         }
 
-        Some(Expression::Index {
-            idx: Box::new(idx),
-            left: Box::new(left),
-        })
+        Some(Box::new(Expression::Index { idx, left }))
     }
 
     fn expect_current_token(&mut self, token: Token) -> bool {
@@ -187,21 +188,21 @@ where
         false
     }
 
-    fn parse_string(&mut self) -> Option<Expression> {
+    fn parse_string(&mut self) -> Option<Box<Expression>> {
         if let Token::String(s) = &self.current_token {
-            return Some(Expression::String(s.clone()));
+            return Some(Box::new(Expression::String(s.clone())));
         }
         None
     }
 
-    fn parse_identifier(&mut self) -> Option<Expression> {
+    fn parse_identifier(&mut self) -> Option<Box<Expression>> {
         if let Token::Identifier(name) = &self.current_token {
-            return Some(Expression::Identifier(name.clone()));
+            return Some(Box::new(Expression::Identifier(name.clone())));
         }
         None
     }
 
-    fn parse_int(&mut self) -> Option<Expression> {
+    fn parse_int(&mut self) -> Option<Box<Expression>> {
         if let Token::Int(num_str) = &self.current_token {
             let num = match num_str.parse::<i32>() {
                 Ok(num) => Some(num),
@@ -210,12 +211,12 @@ where
                     None
                 }
             }?;
-            return Some(Expression::Int(num));
+            return Some(Box::new(Expression::Int(num)));
         }
         None
     }
 
-    fn parse_array_expression(&mut self) -> Option<Expression> {
+    fn parse_array_expression(&mut self) -> Option<Box<Expression>> {
         if !self.expect_current_token(Token::LeftBracket) {
             self.report_expected_token_error(Token::LeftBracket, self.current_token.clone());
             return None;
@@ -224,7 +225,7 @@ where
         let mut elements = Vec::new();
 
         if self.current_token == Token::RightBracket {
-            return Some(Expression::Array(elements));
+            return Some(Box::new(Expression::Array(elements)));
         }
 
         let exp = self.parse_expression(Precedence::Lowest)?;
@@ -245,10 +246,13 @@ where
             return None;
         }
 
-        Some(Expression::Array(elements))
+        Some(Box::new(Expression::Array(elements)))
     }
 
-    fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
+    fn parse_infix_expression(
+        &mut self,
+        left_expression: Box<Expression>,
+    ) -> Option<Box<Expression>> {
         let operator = self.current_token.clone();
         let precedence = self.next_token.precedence();
 
@@ -256,14 +260,14 @@ where
 
         let right_expression = self.parse_expression(precedence)?;
 
-        Some(Expression::Infix {
+        Some(Box::new(Expression::Infix {
             operator,
-            left: Box::new(left_expression),
-            right: Box::new(right_expression),
-        })
+            left: left_expression,
+            right: right_expression,
+        }))
     }
 
-    fn parse_grouped_expression(&mut self) -> Option<Expression> {
+    fn parse_grouped_expression(&mut self) -> Option<Box<Expression>> {
         self.advance_tokens();
 
         let expression = self.parse_expression(Precedence::Lowest)?;
@@ -275,18 +279,18 @@ where
         Some(expression)
     }
 
-    fn parse_prefix_expression(&mut self) -> Option<Expression> {
+    fn parse_prefix_expression(&mut self) -> Option<Box<Expression>> {
         let operator = self.current_token.clone();
 
         self.advance_tokens();
 
-        Some(Expression::Prefix {
+        Some(Box::new(Expression::Prefix {
             operator,
-            right: Box::new(self.parse_expression(Precedence::Prefix)?),
-        })
+            right: self.parse_expression(Precedence::Prefix)?,
+        }))
     }
 
-    fn parse_boolean_expression(&mut self) -> Option<Expression> {
+    fn parse_boolean_expression(&mut self) -> Option<Box<Expression>> {
         let value = match self.current_token {
             Token::True => true,
             Token::False => false,
@@ -296,10 +300,10 @@ where
             }
         };
 
-        Some(Expression::Boolean(value))
+        Some(Box::new(Expression::Boolean(value)))
     }
 
-    fn parse_if_expression(&mut self) -> Option<Expression> {
+    fn parse_if_expression(&mut self) -> Option<Box<Expression>> {
         if !self.expect_next_token(Token::LeftParentesis) {
             self.report_expected_token_error(Token::LeftParentesis, self.next_token.clone());
             return None;
@@ -326,14 +330,14 @@ where
             _ => None,
         };
 
-        Some(Expression::IfExpression {
+        Some(Box::new(Expression::IfExpression {
             condition: Box::new(AstNode::Expression(condition)),
             consequence,
             alternative,
-        })
+        }))
     }
 
-    fn parse_function_expression(&mut self) -> Option<Expression> {
+    fn parse_function_expression(&mut self) -> Option<Box<Expression>> {
         self.advance_tokens();
 
         if self.current_token != Token::LeftParentesis {
@@ -345,7 +349,7 @@ where
         let parameters = self.parse_function_parameters()?;
         let body = self.parse_block_statement()?;
 
-        Some(Expression::FunctionExpression { parameters, body })
+        Some(Box::new(Expression::FunctionExpression { parameters, body }))
     }
 
     fn parse_function_parameters(&mut self) -> Option<Vec<Token>> {
@@ -378,7 +382,7 @@ where
         Some(parameters)
     }
 
-    fn parse_block_statement(&mut self) -> Option<BlockStatement> {
+    fn parse_block_statement(&mut self) -> Option<Box<BlockStatement>> {
         if !self.expect_current_token(Token::LeftBrace) {
             self.report_expected_token_error(Token::LeftBrace, self.current_token.clone());
             return None;
@@ -408,20 +412,20 @@ where
             self.advance_tokens();
         }
 
-        Some(BlockStatement { statements })
+        Some(Box::new(BlockStatement { statements }))
     }
 
-    fn parse_call_expression(&mut self, function: Expression) -> Option<Expression> {
+    fn parse_call_expression(&mut self, function: Box<Expression>) -> Option<Box<Expression>> {
         self.advance_tokens();
         let arguments = self.parse_call_expression_arguments()?;
 
-        Some(Expression::CallExpression {
-            function: Box::new(function),
+        Some(Box::new(Expression::CallExpression {
+            function,
             arguments,
-        })
+        }))
     }
 
-    fn parse_call_expression_arguments(&mut self) -> Option<Vec<Expression>> {
+    fn parse_call_expression_arguments(&mut self) -> Option<Vec<Box<Expression>>> {
         let mut arguments = Vec::new();
 
         if self.current_token == Token::RightParentesis {
@@ -477,7 +481,7 @@ impl Token {
         }
     }
 
-    fn prefix_parse_fn<L>(&self) -> Option<fn(&mut Parser<L>) -> Option<Expression>>
+    fn prefix_parse_fn<L>(&self) -> Option<fn(&mut Parser<L>) -> Option<Box<Expression>>>
     where
         L: Iterator<Item = Token>,
     {
@@ -496,7 +500,9 @@ impl Token {
         }
     }
 
-    fn get_infix_parse_fn<L>(&self) -> Option<fn(&mut Parser<L>, Expression) -> Option<Expression>>
+    fn get_infix_parse_fn<L>(
+        &self,
+    ) -> Option<fn(&mut Parser<L>, Box<Expression>) -> Option<Box<Expression>>>
     where
         L: Iterator<Item = Token>,
     {

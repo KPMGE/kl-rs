@@ -21,7 +21,7 @@ pub enum Object {
     Null,
     Function {
         parameters: Vec<Token>,
-        body: BlockStatement,
+        body: Box<BlockStatement>,
         scope: HashMap<String, Object>,
     },
 }
@@ -33,28 +33,28 @@ impl Evaluator {
         }
     }
 
-    pub fn eval(&mut self, node: AstNode) -> Object {
-        match node {
+    pub fn eval(&mut self, node: Box<AstNode>) -> Object {
+        match *node {
             AstNode::Program { statements } => self.eval_program(statements),
             AstNode::Statement(statement) => self.eval_statement(statement),
             AstNode::Expression(expression) => self.eval_expression(expression),
         }
     }
 
-    fn eval_expression(&mut self, expression: Expression) -> Object {
-        match expression {
+    fn eval_expression(&mut self, expression: Box<Expression>) -> Object {
+        match *expression {
             Expression::Int(value) => Object::Integer(value),
             Expression::Boolean(value) => Object::Boolean(value),
             Expression::String(value) => Object::String(value),
             Expression::Index { idx, left } => self
-                .eval_index_expression(*idx, *left)
+                .eval_index_expression(idx, left)
                 .unwrap_or(Object::Null),
             Expression::Array(elems) => {
                 let elements = self.eval_expressions(elems);
                 Object::Array(elements)
             }
             Expression::Prefix { operator, right } => {
-                let right = self.eval(AstNode::Expression(*right));
+                let right = self.eval(Box::new(AstNode::Expression(right)));
                 self.eval_prefix_expression(operator, right)
             }
             Expression::Infix {
@@ -62,8 +62,8 @@ impl Evaluator {
                 left,
                 right,
             } => {
-                let left = self.eval(AstNode::Expression(*left));
-                let right = self.eval(AstNode::Expression(*right));
+                let left = self.eval(Box::new(AstNode::Expression(left)));
+                let right = self.eval(Box::new(AstNode::Expression(right)));
                 self.eval_infix_expression(left, right, operator)
             }
             Expression::IfExpression {
@@ -72,7 +72,7 @@ impl Evaluator {
                 alternative,
                 ..
             } => {
-                let condition = self.eval(*condition);
+                let condition = self.eval(condition);
 
                 if condition.is_truthy() {
                     return self.eval_block_statement(consequence.statements);
@@ -97,7 +97,7 @@ impl Evaluator {
                 arguments,
                 ..
             } => {
-                let function = self.eval(AstNode::Expression(*function));
+                let function = self.eval(Box::new(AstNode::Expression(function)));
 
                 match function {
                     Object::Builtin(builtin_fn) => {
@@ -115,7 +115,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_index_expression(&mut self, idx: Expression, left: Expression) -> Option<Object> {
+    fn eval_index_expression(&mut self, idx: Box<Expression>, left: Box<Expression>) -> Option<Object> {
         let idx_obj = self.eval_expression(idx);
         let left_obj = self.eval_expression(left);
 
@@ -144,8 +144,8 @@ impl Evaluator {
     fn eval_function_call(
         &mut self,
         parameters: Vec<Token>,
-        arguments: Vec<Expression>,
-        body: BlockStatement,
+        arguments: Vec<Box<Expression>>,
+        body: Box<BlockStatement>,
         scope: &mut HashMap<String, Object>,
     ) -> Object {
         let previous_context = self.context.clone();
@@ -169,37 +169,37 @@ impl Evaluator {
         result
     }
 
-    fn eval_statement(&mut self, statement: Statement) -> Object {
-        match statement {
+    fn eval_statement(&mut self, statement: Box<Statement>) -> Object {
+        match *statement {
             Statement::ReturnStatement(value) => {
-                let result_object = self.eval(AstNode::Expression(value));
+                let result_object = self.eval(Box::new(AstNode::Expression(value)));
                 Object::Return(Box::new(result_object))
             }
             Statement::LetStatement { name, value } => {
-                let let_name = match name {
+                let let_name = match *name {
                     Expression::Identifier(identifier_name) => identifier_name,
                     _ => panic!(),
                 };
 
-                let result_object = self.eval(AstNode::Expression(value));
+                let result_object = self.eval(Box::new(AstNode::Expression(value)));
                 self.context.insert(let_name.clone(), result_object.clone());
                 result_object
             }
         }
     }
 
-    fn eval_expressions(&mut self, expressions: Vec<Expression>) -> Vec<Object> {
+    fn eval_expressions(&mut self, expressions: Vec<Box<Expression>>) -> Vec<Object> {
         expressions
             .iter()
-            .map(|expression| self.eval(AstNode::Expression(expression.clone())))
+            .map(|expression| self.eval(Box::new(AstNode::Expression(expression.clone()))))
             .collect()
     }
 
-    fn eval_program(&mut self, statements: Vec<AstNode>) -> Object {
+    fn eval_program(&mut self, statements: Vec<Box<AstNode>>) -> Object {
         let mut result = Object::Null;
 
         for statement in statements {
-            result = self.eval(statement.clone());
+            result = self.eval(statement);
             if let Object::Return(return_value) = result {
                 return Object::Return(return_value);
             }
@@ -208,7 +208,7 @@ impl Evaluator {
         result
     }
 
-    fn eval_block_statement(&mut self, statements: Vec<AstNode>) -> Object {
+    fn eval_block_statement(&mut self, statements: Vec<Box<AstNode>>) -> Object {
         let mut result = Object::Null;
 
         for statement in statements {

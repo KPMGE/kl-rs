@@ -76,7 +76,7 @@ fn debug_parser<L>(mut parser: Parser<L>)
     let program = parser.parse_program();
 
     println!("Parsed program: ");
-    if let kl_rs::ast::AstNode::Program { ref statements } = program {
+    if let kl_rs::ast::AstNode::Program { ref statements } = *program {
         for statement in statements {
             println!("statement: {:#?}", statement);
         }
