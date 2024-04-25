@@ -80,7 +80,7 @@ impl Parser {
             return None;
         }
 
-        let name = self.parse_identifier()?;
+        let name = Box::new(self.parse_identifier()?);
 
         self.advance_tokens();
 
@@ -91,7 +91,7 @@ impl Parser {
 
         self.advance_tokens();
 
-        let value = self.parse_expression(Precedence::Lowest)?;
+        let value = Box::new(self.parse_expression(Precedence::Lowest)?);
 
         self.advance_tokens();
 

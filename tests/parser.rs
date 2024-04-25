@@ -31,8 +31,8 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
                 let expected_int = expected_ints.get(idx).unwrap();
 
                 let expected_statement = AstNode::Statement(Statement::LetStatement {
-                    name: Expression::Identifier(expected_identifier.to_string()),
-                    value: Expression::Int(expected_int.to_string().parse().unwrap()),
+                    name: Box::new(Expression::Identifier(expected_identifier.to_string())),
+                    value: Box::new(Expression::Int(expected_int.to_string().parse().unwrap())),
                 });
 
                 assert_eq!(*statement, expected_statement);

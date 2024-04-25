@@ -157,12 +157,12 @@ impl Evaluator {
                 Object::Return(Box::new(result_object))
             }
             Statement::LetStatement { name, value } => {
-                let let_name = match name {
+                let let_name = match *name {
                     Expression::Identifier(identifier_name) => identifier_name,
                     _ => panic!(),
                 };
 
-                let result_object = self.eval(AstNode::Expression(value));
+                let result_object = self.eval(AstNode::Expression(*value));
                 self.context.insert(let_name.clone(), result_object.clone());
                 result_object
             }

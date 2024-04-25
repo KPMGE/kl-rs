@@ -39,7 +39,7 @@ pub struct BlockStatement {
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Statement {
     ReturnStatement(Expression),
-    LetStatement { name: Expression, value: Expression },
+    LetStatement { name: Box<Expression>, value: Box<Expression> },
 }
 
 #[derive(Debug, Eq, Clone, PartialEq)]
