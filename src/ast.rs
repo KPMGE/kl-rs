@@ -17,7 +17,7 @@ pub enum Expression {
         right: Box<Expression>,
     },
     IfExpression {
-        condition: Box<AstNode>,
+        condition: Box<Expression>,
         consequence: Box<BlockStatement>,
         alternative: Option<BlockStatement>,
     },

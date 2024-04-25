@@ -68,7 +68,7 @@ impl Evaluator {
                 alternative,
                 ..
             } => {
-                let condition = self.eval(*condition);
+                let condition = self.eval(AstNode::Expression(*condition));
 
                 if condition.is_truthy() {
                     return self.eval_block_statement(consequence.statements);
@@ -261,7 +261,7 @@ impl Object {
             Object::Null => "null".to_string(),
             Object::Array(elems) => {
                 let elements_str = elems
-                    .iter()
+                    .into_iter()
                     .map(|e| e.inspect())
                     .collect::<Vec<String>>()
                     .join(", ");

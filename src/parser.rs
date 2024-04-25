@@ -280,7 +280,7 @@ impl Parser {
         }
         self.advance_tokens();
 
-        let condition = self.parse_expression(Precedence::Lowest)?;
+        let condition = Box::new(self.parse_expression(Precedence::Lowest)?);
 
         if !self.expect_next_token(Token::RightParentesis) {
             self.report_expected_token_error(Token::LeftParentesis, self.next_token.clone());
@@ -301,7 +301,7 @@ impl Parser {
         };
 
         Some(Expression::IfExpression {
-            condition: Box::new(AstNode::Expression(condition)),
+            condition,
             consequence,
             alternative,
         })

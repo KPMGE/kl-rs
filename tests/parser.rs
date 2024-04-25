@@ -285,11 +285,11 @@ fn given_an_if_expression_it_should_parse_correctly() {
     let mut parser = Parser::new(lexer);
 
     let expected_expression = Expression::IfExpression {
-        condition: Box::new(AstNode::Expression(Expression::Infix {
+        condition: Box::new(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier("x".to_string())),
             right: Box::new(Expression::Identifier("y".to_string())),
-        })),
+        }),
         consequence: Box::new(BlockStatement {
             statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
         }),
@@ -320,11 +320,11 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
     let mut parser = Parser::new(lexer);
 
     let expected_expression = Expression::IfExpression {
-        condition: Box::new(AstNode::Expression(Expression::Infix {
+        condition: Box::new(Expression::Infix {
             operator: Token::LessThan,
             left: Box::new(Expression::Identifier("x".to_string())),
             right: Box::new(Expression::Identifier("y".to_string())),
-        })),
+        }),
         consequence: Box::new(BlockStatement {
             statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
         }),
