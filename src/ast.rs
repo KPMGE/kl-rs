@@ -39,12 +39,15 @@ pub struct BlockStatement {
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum Statement {
     ReturnStatement(Box<Expression>),
-    LetStatement { name: Box<Expression>, value: Box<Expression> },
+    LetStatement {
+        name: Box<Expression>,
+        value: Box<Expression>,
+    },
 }
 
 #[derive(Debug, Eq, Clone, PartialEq)]
 pub enum AstNode {
-    Statement(Statement),
-    Expression(Expression),
+    Statement(Box<Statement>),
+    Expression(Box<Expression>),
     Program { statements: Vec<AstNode> },
 }

@@ -100,11 +100,14 @@ impl Parser {
             return None;
         }
 
-        Some(AstNode::Statement(Statement::LetStatement { name, value }))
+        Some(AstNode::Statement(Box::new(Statement::LetStatement {
+            name,
+            value,
+        })))
     }
 
     fn parse_expression_statement(&mut self) -> Option<AstNode> {
-        let expression = self.parse_expression(Precedence::Lowest)?;
+        let expression = Box::new(self.parse_expression(Precedence::Lowest)?);
 
         if self.current_token == Token::Semicolon {
             self.advance_tokens();
@@ -126,7 +129,9 @@ impl Parser {
 
         let expression = Box::new(self.parse_expression(Precedence::Lowest)?);
 
-        Some(AstNode::Statement(Statement::ReturnStatement(expression)))
+        Some(AstNode::Statement(Box::new(Statement::ReturnStatement(
+            expression,
+        ))))
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {

@@ -30,10 +30,10 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
                 let expected_identifier = expected_identifiers.get(idx).unwrap();
                 let expected_int = expected_ints.get(idx).unwrap();
 
-                let expected_statement = AstNode::Statement(Statement::LetStatement {
+                let expected_statement = AstNode::Statement(Box::new(Statement::LetStatement {
                     name: Box::new(Expression::Identifier(expected_identifier.to_string())),
                     value: Box::new(Expression::Int(expected_int.to_string().parse().unwrap())),
-                });
+                }));
 
                 assert_eq!(*statement, expected_statement);
             })
@@ -67,8 +67,9 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
                 let expected_expression =
                     Expression::Int(expected_int.to_string().parse().unwrap());
 
-                let expected_statement =
-                    AstNode::Statement(Statement::ReturnStatement(Box::new(expected_expression)));
+                let expected_statement = AstNode::Statement(Box::new(Statement::ReturnStatement(
+                    Box::new(expected_expression),
+                )));
 
                 assert_eq!(*statement, expected_statement);
             })
@@ -94,7 +95,7 @@ fn given_a_variable_name_it_should_parse_correctly() {
 
             match statements.first().unwrap() {
                 AstNode::Expression(expression) => {
-                    assert_eq!(*expression, Expression::Identifier("foo".to_string()));
+                    assert_eq!(**expression, Expression::Identifier("foo".to_string()));
                 }
                 _ => panic!("wrong statement!"),
             }
@@ -122,7 +123,7 @@ fn given_a_number_expression_it_should_parse_correctly() {
             match statement {
                 AstNode::Expression(expression) => {
                     assert_eq!(
-                        *expression,
+                        **expression,
                         Expression::Int("5".to_string().parse().unwrap())
                     );
                 }
@@ -163,7 +164,7 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
                         let expected_right_expression =
                             Expression::Int(expected_values.get(idx).unwrap().parse().unwrap());
 
-                        match expression {
+                        match &**expression {
                             Expression::Prefix { operator, right } => {
                                 assert_eq!(operator, expected_operator);
                                 assert_eq!(*right, Box::new(expected_right_expression));
@@ -291,7 +292,9 @@ fn given_an_if_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier("y".to_string())),
         }),
         consequence: Box::new(BlockStatement {
-            statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
+            statements: vec![AstNode::Expression(Box::new(Expression::Identifier(
+                "x".to_string(),
+            )))],
         }),
         alternative: None,
     };
@@ -305,7 +308,7 @@ fn given_an_if_expression_it_should_parse_correctly() {
 
             let statement = statements.first().unwrap();
             match statement {
-                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                AstNode::Expression(expression) => assert_eq!(**expression, expected_expression),
                 _ => panic!("Unexpected statement!"),
             }
         }
@@ -326,10 +329,14 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
             right: Box::new(Expression::Identifier("y".to_string())),
         }),
         consequence: Box::new(BlockStatement {
-            statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
+            statements: vec![AstNode::Expression(Box::new(Expression::Identifier(
+                "x".to_string(),
+            )))],
         }),
         alternative: Some(BlockStatement {
-            statements: vec![AstNode::Expression(Expression::Identifier("y".to_string()))],
+            statements: vec![AstNode::Expression(Box::new(Expression::Identifier(
+                "y".to_string(),
+            )))],
         }),
     };
 
@@ -343,7 +350,7 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
 
             let statement = statements.first().unwrap();
             match statement {
-                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                AstNode::Expression(expression) => assert_eq!(**expression, expected_expression),
                 _ => panic!("Unexpected statement!"),
             }
         }
@@ -360,11 +367,11 @@ fn given_a_function_expression_it_should_parse_correctly() {
             Token::Identifier("b".to_string()),
         ],
         body: Box::new(BlockStatement {
-            statements: vec![AstNode::Expression(Expression::Infix {
+            statements: vec![AstNode::Expression(Box::new(Expression::Infix {
                 operator: Token::Plus,
                 left: Box::new(Expression::Identifier("a".to_string())),
                 right: Box::new(Expression::Identifier("b".to_string())),
-            })],
+            }))],
         }),
     };
 
@@ -381,7 +388,7 @@ fn given_a_function_expression_it_should_parse_correctly() {
             let statement = statements.first().unwrap();
 
             match statement {
-                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                AstNode::Expression(expression) => assert_eq!(**expression, expected_expression),
                 _ => panic!("Unexpected expression!"),
             }
         }
@@ -422,7 +429,7 @@ fn given_a_call_expression_it_should_parse_correctly() {
 
             let statement = statements.first().unwrap();
             match statement {
-                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                AstNode::Expression(expression) => assert_eq!(**expression, expected_expression),
                 _ => panic!("Unexpected statement!"),
             }
         }
@@ -448,7 +455,7 @@ fn given_a_string_expression_it_should_parse_correctly() {
             let statement = statements.first().unwrap();
 
             match statement {
-                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                AstNode::Expression(expression) => assert_eq!(**expression, expected_expression),
                 _ => panic!("Unexpected expression!"),
             }
         }
@@ -482,7 +489,7 @@ fn given_an_array_expression_it_should_parse_correctly() {
             let statement = statements.first().unwrap();
 
             match statement {
-                AstNode::Expression(expression) => assert_eq!(*expression, expected_expression),
+                AstNode::Expression(expression) => assert_eq!(**expression, expected_expression),
                 _ => panic!("Unexpected expression!"),
             }
         }
@@ -505,7 +512,7 @@ fn assert_boolean_expression(code: &str, expected_expression: &Expression) {
             let statement = statements.first().unwrap();
 
             match statement {
-                AstNode::Expression(expression) => assert_eq!(expression, expected_expression),
+                AstNode::Expression(expression) => assert_eq!(&**expression, expected_expression),
                 _ => panic!("Unexpected statement!"),
             }
         }
@@ -539,7 +546,7 @@ fn assert_infix_expression(code: &str, expected_operator: Token, expected_litera
                         right: Box::new(expected_right_exp),
                     };
 
-                    assert_eq!(*expression, expected_expression);
+                    assert_eq!(&**expression, &expected_expression);
                 }
                 _ => panic!(),
             }

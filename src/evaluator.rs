@@ -35,8 +35,8 @@ impl Evaluator {
     pub fn eval(&mut self, node: AstNode) -> Object {
         match node {
             AstNode::Program { statements } => self.eval_program(statements),
-            AstNode::Statement(statement) => self.eval_statement(statement),
-            AstNode::Expression(expression) => self.eval_expression(expression),
+            AstNode::Statement(statement) => self.eval_statement(*statement),
+            AstNode::Expression(expression) => self.eval_expression(*expression),
         }
     }
 
@@ -50,7 +50,7 @@ impl Evaluator {
             Expression::Boolean(value) => Object::Boolean(value),
             Expression::String(value) => Object::String(value),
             Expression::Prefix { operator, right } => {
-                let right = self.eval(AstNode::Expression(*right));
+                let right = self.eval(AstNode::Expression(right));
                 self.eval_prefix_expression(operator, right)
             }
             Expression::Infix {
@@ -58,8 +58,8 @@ impl Evaluator {
                 left,
                 right,
             } => {
-                let left = self.eval(AstNode::Expression(*left));
-                let right = self.eval(AstNode::Expression(*right));
+                let left = self.eval(AstNode::Expression(left));
+                let right = self.eval(AstNode::Expression(right));
                 self.eval_infix_expression(left, right, operator)
             }
             Expression::IfExpression {
@@ -68,7 +68,7 @@ impl Evaluator {
                 alternative,
                 ..
             } => {
-                let condition = self.eval(AstNode::Expression(*condition));
+                let condition = self.eval(AstNode::Expression(condition));
 
                 if condition.is_truthy() {
                     return self.eval_block_statement(consequence.statements);
@@ -93,7 +93,7 @@ impl Evaluator {
                 arguments,
                 ..
             } => {
-                let function = self.eval(AstNode::Expression(*function));
+                let function = self.eval(AstNode::Expression(function));
 
                 match function {
                     Object::Builtin(builtin_fn) => {
@@ -153,7 +153,7 @@ impl Evaluator {
     fn eval_statement(&mut self, statement: Statement) -> Object {
         match statement {
             Statement::ReturnStatement(value) => {
-                let result_object = self.eval(AstNode::Expression(*value));
+                let result_object = self.eval(AstNode::Expression(value));
                 Object::Return(Box::new(result_object))
             }
             Statement::LetStatement { name, value } => {
@@ -162,7 +162,7 @@ impl Evaluator {
                     _ => panic!(),
                 };
 
-                let result_object = self.eval(AstNode::Expression(*value));
+                let result_object = self.eval(AstNode::Expression(value));
                 self.context.insert(let_name.clone(), result_object.clone());
                 result_object
             }
@@ -172,7 +172,7 @@ impl Evaluator {
     fn eval_expressions(&mut self, expressions: Vec<Expression>) -> Vec<Object> {
         expressions
             .iter()
-            .map(|expression| self.eval(AstNode::Expression(expression.clone())))
+            .map(|expression| self.eval(AstNode::Expression(Box::new(expression.clone()))))
             .collect()
     }
 
@@ -261,7 +261,7 @@ impl Object {
             Object::Null => "null".to_string(),
             Object::Array(elems) => {
                 let elements_str = elems
-                    .into_iter()
+                    .iter()
                     .map(|e| e.inspect())
                     .collect::<Vec<String>>()
                     .join(", ");
