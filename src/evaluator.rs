@@ -20,7 +20,7 @@ pub enum Object {
     Null,
     Function {
         parameters: Vec<Token>,
-        body: BlockStatement,
+        body: Box<BlockStatement>,
         scope: HashMap<String, Object>,
     },
 }
@@ -104,7 +104,7 @@ impl Evaluator {
                         parameters,
                         body,
                         mut scope,
-                    } => self.eval_function_call(parameters, arguments, body, &mut scope),
+                    } => self.eval_function_call(parameters, arguments, *body, &mut scope),
                     obj => panic!("Wrong object, expected Object::Function, got: {:?}", obj),
                 }
             }
@@ -261,7 +261,7 @@ impl Object {
             Object::Null => "null".to_string(),
             Object::Array(elems) => {
                 let elements_str = elems
-                    .into_iter()
+                    .iter()
                     .map(|e| e.inspect())
                     .collect::<Vec<String>>()
                     .join(", ");

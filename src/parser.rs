@@ -288,7 +288,7 @@ impl Parser {
         }
         self.advance_tokens();
 
-        let consequence = self.parse_block_statement()?;
+        let consequence = Box::new(self.parse_block_statement()?);
 
         self.advance_tokens();
 
@@ -317,7 +317,7 @@ impl Parser {
         }
 
         let parameters = self.parse_function_parameters()?;
-        let body = self.parse_block_statement()?;
+        let body = Box::new(self.parse_block_statement()?);
 
         Some(Expression::FunctionExpression { parameters, body })
     }

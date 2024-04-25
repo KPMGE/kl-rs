@@ -18,12 +18,12 @@ pub enum Expression {
     },
     IfExpression {
         condition: Box<AstNode>,
-        consequence: BlockStatement,
+        consequence: Box<BlockStatement>,
         alternative: Option<BlockStatement>,
     },
     FunctionExpression {
         parameters: Vec<Token>,
-        body: BlockStatement,
+        body: Box<BlockStatement>,
     },
     CallExpression {
         function: Box<Expression>,

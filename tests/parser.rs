@@ -290,9 +290,9 @@ fn given_an_if_expression_it_should_parse_correctly() {
             left: Box::new(Expression::Identifier("x".to_string())),
             right: Box::new(Expression::Identifier("y".to_string())),
         })),
-        consequence: BlockStatement {
+        consequence: Box::new(BlockStatement {
             statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
-        },
+        }),
         alternative: None,
     };
 
@@ -325,9 +325,9 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
             left: Box::new(Expression::Identifier("x".to_string())),
             right: Box::new(Expression::Identifier("y".to_string())),
         })),
-        consequence: BlockStatement {
+        consequence: Box::new(BlockStatement {
             statements: vec![AstNode::Expression(Expression::Identifier("x".to_string()))],
-        },
+        }),
         alternative: Some(BlockStatement {
             statements: vec![AstNode::Expression(Expression::Identifier("y".to_string()))],
         }),
@@ -359,13 +359,13 @@ fn given_a_function_expression_it_should_parse_correctly() {
             Token::Identifier("a".to_string()),
             Token::Identifier("b".to_string()),
         ],
-        body: BlockStatement {
+        body: Box::new(BlockStatement {
             statements: vec![AstNode::Expression(Expression::Infix {
                 operator: Token::Plus,
                 left: Box::new(Expression::Identifier("a".to_string())),
                 right: Box::new(Expression::Identifier("b".to_string())),
             })],
-        },
+        }),
     };
 
     let lexer = Lexer::new(code.to_string());
