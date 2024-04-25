@@ -153,7 +153,7 @@ impl Evaluator {
     fn eval_statement(&mut self, statement: Statement) -> Object {
         match statement {
             Statement::ReturnStatement(value) => {
-                let result_object = self.eval(AstNode::Expression(value));
+                let result_object = self.eval(AstNode::Expression(*value));
                 Object::Return(Box::new(result_object))
             }
             Statement::LetStatement { name, value } => {

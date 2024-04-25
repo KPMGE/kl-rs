@@ -68,7 +68,7 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
                     Expression::Int(expected_int.to_string().parse().unwrap());
 
                 let expected_statement =
-                    AstNode::Statement(Statement::ReturnStatement(expected_expression));
+                    AstNode::Statement(Statement::ReturnStatement(Box::new(expected_expression)));
 
                 assert_eq!(*statement, expected_statement);
             })

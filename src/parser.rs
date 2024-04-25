@@ -124,7 +124,7 @@ impl Parser {
             return None;
         }
 
-        let expression = self.parse_expression(Precedence::Lowest)?;
+        let expression = Box::new(self.parse_expression(Precedence::Lowest)?);
 
         Some(AstNode::Statement(Statement::ReturnStatement(expression)))
     }
