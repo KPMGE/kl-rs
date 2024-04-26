@@ -19,7 +19,7 @@ pub enum Expression {
     IfExpression {
         condition: Box<Expression>,
         consequence: Box<BlockStatement>,
-        alternative: Option<BlockStatement>,
+        alternative: Option<Box<BlockStatement>>,
     },
     FunctionExpression {
         parameters: Vec<Token>,

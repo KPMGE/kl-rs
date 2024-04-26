@@ -333,11 +333,11 @@ fn given_an_if_else_expression_it_should_parse_correctly() {
                 "x".to_string(),
             )))],
         }),
-        alternative: Some(BlockStatement {
+        alternative: Some(Box::new(BlockStatement {
             statements: vec![AstNode::Expression(Box::new(Expression::Identifier(
                 "y".to_string(),
             )))],
-        }),
+        })),
     };
 
     let parsed_program = parser.parse_program();
