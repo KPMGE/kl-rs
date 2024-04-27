@@ -18,7 +18,7 @@ fn main() {
         gflags::print_help_and_exit(0);
     }
 
-    let mut evaluator = Evaluator::new();
+    let evaluator = Evaluator::new();
 
     loop {
         let mut input = String::new();

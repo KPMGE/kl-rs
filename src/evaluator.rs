@@ -1,12 +1,13 @@
 use crate::ast::{AstNode, BlockStatement, Expression, Statement};
 use crate::token::Token;
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::builtin::{BuiltinFn, BUILTIN_FUNCTIONS};
 
 #[derive(Default)]
 pub struct Evaluator {
-    context: HashMap<String, Object>,
+    context: RefCell<HashMap<String, Object>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,11 +29,11 @@ pub enum Object {
 impl Evaluator {
     pub fn new() -> Self {
         Evaluator {
-            context: HashMap::new(),
+            context: RefCell::new(HashMap::new()),
         }
     }
 
-    pub fn eval(&mut self, node: AstNode) -> Object {
+    pub fn eval(&self, node: AstNode) -> Object {
         match node {
             AstNode::Program { statements } => self.eval_program(statements),
             AstNode::Statement(statement) => self.eval_statement(*statement),
@@ -40,7 +41,7 @@ impl Evaluator {
         }
     }
 
-    fn eval_expression(&mut self, expression: Expression) -> Object {
+    fn eval_expression(&self, expression: Expression) -> Object {
         match expression {
             Expression::Array(elems) => {
                 let elements = self.eval_expressions(elems);
@@ -111,19 +112,20 @@ impl Evaluator {
         }
     }
 
-    fn eval_identifier(&mut self, name: String) -> Object {
+    fn eval_identifier(&self, name: String) -> Object {
         if let Some(function) = BUILTIN_FUNCTIONS.get(name.as_str()) {
             return Object::Builtin(*function);
         }
 
         self.context
+            .borrow()
             .get(&name)
             .expect("ERROR: Could not find identifer")
             .clone()
     }
 
     fn eval_function_call(
-        &mut self,
+        &self,
         parameters: Vec<Token>,
         arguments: Vec<Expression>,
         body: BlockStatement,
@@ -143,14 +145,22 @@ impl Evaluator {
                 _ => panic!(),
             });
 
-        self.context = scope.clone();
+        self.context.borrow_mut().clear();
+        scope.iter().for_each(|(key, value)| {
+            self.context.borrow_mut().insert(key.clone(), value.clone());
+        });
+
         let result = self.eval_block_statement(body.statements);
-        self.context = previous_context;
+
+        self.context.borrow_mut().clear();
+        previous_context.borrow().iter().for_each(|(key, value)| {
+            self.context.borrow_mut().insert(key.clone(), value.clone());
+        });
 
         result
     }
 
-    fn eval_statement(&mut self, statement: Statement) -> Object {
+    fn eval_statement(&self, statement: Statement) -> Object {
         match statement {
             Statement::ReturnStatement(value) => {
                 let result_object = self.eval(AstNode::Expression(value));
@@ -163,20 +173,20 @@ impl Evaluator {
                 };
 
                 let result_object = self.eval(AstNode::Expression(value));
-                self.context.insert(let_name.clone(), result_object.clone());
+                self.context.borrow_mut().insert(let_name, result_object.clone());
                 result_object
             }
         }
     }
 
-    fn eval_expressions(&mut self, expressions: Vec<Expression>) -> Vec<Object> {
+    fn eval_expressions(&self, expressions: Vec<Expression>) -> Vec<Object> {
         expressions
             .iter()
             .map(|expression| self.eval(AstNode::Expression(Box::new(expression.clone()))))
             .collect()
     }
 
-    fn eval_program(&mut self, statements: Vec<AstNode>) -> Object {
+    fn eval_program(&self, statements: Vec<AstNode>) -> Object {
         let mut result = Object::Null;
 
         for statement in statements {
@@ -189,7 +199,7 @@ impl Evaluator {
         result
     }
 
-    fn eval_block_statement(&mut self, statements: Vec<AstNode>) -> Object {
+    fn eval_block_statement(&self, statements: Vec<AstNode>) -> Object {
         let mut result = Object::Null;
 
         for statement in statements {

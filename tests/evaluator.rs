@@ -15,7 +15,7 @@ fn given_an_integer_expression_it_should_evaluate_to_the_right_object() {
             _ => panic!("Unexpected AstNode!"),
         };
 
-        let mut evaluator = Evaluator::new();
+        let evaluator = Evaluator::new();
         let evaluated_obj = evaluator.eval(node);
 
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
@@ -36,7 +36,7 @@ fn given_boolean_expressions_it_should_evaluate_to_the_right_object() {
             _ => panic!("Unexpected AstNode!"),
         };
 
-        let mut evaluator = Evaluator::new();
+        let evaluator = Evaluator::new();
         let evaluated_obj = evaluator.eval(node);
 
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
@@ -63,7 +63,7 @@ fn given_prefix_expressions_it_should_evaluate_correctly() {
             _ => panic!("Unexpected AstNode!"),
         };
 
-        let mut evaluator = Evaluator::new();
+        let evaluator = Evaluator::new();
         let evaluated_obj = evaluator.eval(node);
 
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
@@ -98,7 +98,7 @@ fn given_if_else_expressions_it_should_evaluate_correctly() {
             _ => panic!("Unexpected AstNode!"),
         };
 
-        let mut evaluator = Evaluator::new();
+        let evaluator = Evaluator::new();
         let evaluated_obj = evaluator.eval(node);
 
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
@@ -125,7 +125,7 @@ fn given_return_statements_it_should_evaluate_correctly() {
             _ => panic!("Unexpected AstNode!"),
         };
 
-        let mut evaluator = Evaluator::new();
+        let evaluator = Evaluator::new();
         let evaluated_obj = evaluator.eval(node);
 
         assert_eq!(evaluated_obj, *expected_objects.get(idx).unwrap());
@@ -145,7 +145,7 @@ fn given_a_string_expression_it_should_evaluate_correctly() {
         _ => panic!("Unexpected AstNode!"),
     };
 
-    let mut evaluator = Evaluator::new();
+    let evaluator = Evaluator::new();
     let evaluated_obj = evaluator.eval(node);
 
     assert_eq!(evaluated_obj, expected_obj);
@@ -164,7 +164,7 @@ fn given_a_string_expression_when_calling_len_it_should_evaluate_correctly() {
         _ => panic!("Unexpected AstNode!"),
     };
 
-    let mut evaluator = Evaluator::new();
+    let evaluator = Evaluator::new();
     let evaluated_obj = evaluator.eval(node);
 
     assert_eq!(evaluated_obj, expected_obj);
