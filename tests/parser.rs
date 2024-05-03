@@ -13,7 +13,7 @@ fn given_let_statements_with_single_integers_shold_parse_correctly() {
         let baz = 30;\
     ";
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
     let expected_identifiers = &["foo", "bar", "baz"];
     let expected_ints = &["10", "20", "30"];
@@ -50,7 +50,7 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
         return 30;\
     ";
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
     let expected_ints = &["10", "20", "30"];
 
@@ -82,7 +82,7 @@ fn given_return_statements_with_single_integers_shold_parse_correctly() {
 fn given_a_variable_name_it_should_parse_correctly() {
     let code = "foo;";
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let parsed_program = parser.parse_program();
@@ -108,7 +108,7 @@ fn given_a_variable_name_it_should_parse_correctly() {
 fn given_a_number_expression_it_should_parse_correctly() {
     let code = "5;";
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let parsed_program = parser.parse_program();
@@ -141,7 +141,7 @@ fn given_a_prefix_expression_it_should_parse_correctly() {
         !20;
     ";
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let expected_operators = vec![Token::Minus, Token::Bang];
@@ -245,14 +245,14 @@ fn given_a_grouped_expression_it_should_parse_correctly() {
     ];
 
     test_cases.iter().for_each(|(case, expected)| {
-        let lexer = Lexer::new(case.to_string());
+        let lexer = Lexer::new(case);
         let mut parser = Parser::new(lexer);
 
         let parsed_program = parser.parse_program();
 
         assert_eq!(parser.errors.len(), 0);
 
-        let lexer = Lexer::new(expected.to_string());
+        let lexer = Lexer::new(expected);
         let mut parser = Parser::new(lexer);
 
         let expected_parsed_program = parser.parse_program();
@@ -282,7 +282,7 @@ fn given_a_grouped_expression_it_should_parse_correctly() {
 #[test]
 fn given_an_if_expression_it_should_parse_correctly() {
     let code = "if (x < y) { x }";
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let expected_expression = Expression::IfExpression {
@@ -319,7 +319,7 @@ fn given_an_if_expression_it_should_parse_correctly() {
 #[test]
 fn given_an_if_else_expression_it_should_parse_correctly() {
     let code = "if (x < y) { x } else { y }";
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let expected_expression = Expression::IfExpression {
@@ -375,7 +375,7 @@ fn given_a_function_expression_it_should_parse_correctly() {
         }),
     };
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
     let parsed_program = parser.parse_program();
 
@@ -416,7 +416,7 @@ fn given_a_call_expression_it_should_parse_correctly() {
         ],
     };
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let parsed_program = parser.parse_program();
@@ -442,7 +442,7 @@ fn given_a_string_expression_it_should_parse_correctly() {
     let code = "\"kevin\"";
     let expected_expression = Expression::String("kevin".to_string());
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
     let parsed_program = parser.parse_program();
 
@@ -476,7 +476,7 @@ fn given_an_array_expression_it_should_parse_correctly() {
         Expression::String("kevin".to_string()),
     ]);
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
     let parsed_program = parser.parse_program();
 
@@ -498,7 +498,7 @@ fn given_an_array_expression_it_should_parse_correctly() {
 }
 
 fn assert_boolean_expression(code: &str, expected_expression: &Expression) {
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let parsed_program = parser.parse_program();
@@ -521,7 +521,7 @@ fn assert_boolean_expression(code: &str, expected_expression: &Expression) {
 }
 
 fn assert_infix_expression(code: &str, expected_operator: Token, expected_literals: (&str, &str)) {
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
 
     let parsed_program = parser.parse_program();

@@ -16,89 +16,22 @@ lazy_static! {
     ]);
 }
 
-#[derive(Debug, Clone)]
-pub struct Lexer {
-    input: String,
+#[derive(Debug)]
+pub struct Lexer<'l> {
+    input: &'l str,
     current_position: usize,
     read_position: usize,
     current_char: Option<char>,
 }
 
-impl Lexer {
-    pub fn new(input: String) -> Lexer {
+impl<'l> Lexer<'l> {
+    pub fn new(input: &'l str) -> Lexer<'_> {
         Lexer {
-            input: input.clone(),
+            input,
             current_position: 0,
             read_position: 1,
             current_char: input.chars().nth(0),
         }
-    }
-
-    pub fn next_token(&mut self) -> Token {
-        self.skip_whitespaces();
-
-        if self.current_char.is_none() {
-            return Token::Eof;
-        }
-
-        let ch = self.current_char.unwrap();
-
-        let token = match ch {
-            '(' => Token::LeftParentesis,
-            ')' => Token::RightParentesis,
-            '{' => Token::LeftBrace,
-            '}' => Token::RightBrace,
-            '+' => Token::Plus,
-            '-' => Token::Minus,
-            '<' => Token::LessThan,
-            '>' => Token::GreaterThan,
-            ',' => Token::Comma,
-            ';' => Token::Semicolon,
-            '"' => Token::String(self.read_string()),
-            '*' => Token::Asterisk,
-            '[' => Token::LeftBracket,
-            ']' => Token::RightBracket,
-            '/' => {
-                if self.peek_char(self.read_position).unwrap() == '*' {
-                    self.skip_comments();
-                    return self.next_token();
-                }
-                Token::Slash
-            }
-            '=' => match self.peek_char(self.read_position) {
-                Some('=') => {
-                    self.read_char();
-                    Token::Equals
-                }
-                _ => Token::Assign,
-            },
-            '!' => match self.peek_char(self.read_position) {
-                Some('=') => {
-                    self.read_char();
-                    Token::NotEquals
-                }
-                _ => Token::Bang,
-            },
-            c => {
-                if c.is_letter() {
-                    let identifier = self.read_identifier();
-                    return match KEYWORDS.get(&identifier.as_str()) {
-                        Some(tok) => tok.clone(),
-                        None => Token::Identifier(identifier),
-                    };
-                }
-
-                if c.is_ascii_digit() {
-                    let num = self.read_number();
-                    return Token::Int(num.to_string());
-                }
-
-                Token::Illegal
-            }
-        };
-
-        self.read_char();
-        token
     }
 
     fn read_string(&mut self) -> String {
@@ -201,5 +134,76 @@ trait IsLetter {
 impl IsLetter for char {
     fn is_letter(&self) -> bool {
         self.is_ascii_lowercase() || self.is_ascii_uppercase()
+    }
+}
+
+impl Iterator for Lexer<'_> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.skip_whitespaces();
+
+        if self.current_char.is_none() {
+            return Some(Token::Eof);
+        }
+
+        let ch = self.current_char.unwrap();
+
+        let token = match ch {
+            '(' => Token::LeftParentesis,
+            ')' => Token::RightParentesis,
+            '{' => Token::LeftBrace,
+            '}' => Token::RightBrace,
+            '+' => Token::Plus,
+            '-' => Token::Minus,
+            '<' => Token::LessThan,
+            '>' => Token::GreaterThan,
+            ',' => Token::Comma,
+            ';' => Token::Semicolon,
+            '"' => Token::String(self.read_string()),
+            '*' => Token::Asterisk,
+            '[' => Token::LeftBracket,
+            ']' => Token::RightBracket,
+            '/' => {
+                if self.peek_char(self.read_position).unwrap() == '*' {
+                    self.skip_comments();
+                    return self.next();
+                }
+                Token::Slash
+            }
+            '=' => match self.peek_char(self.read_position) {
+                Some('=') => {
+                    self.read_char();
+                    Token::Equals
+                }
+                _ => Token::Assign,
+            },
+            '!' => match self.peek_char(self.read_position) {
+                Some('=') => {
+                    self.read_char();
+                    Token::NotEquals
+                }
+                _ => Token::Bang,
+            },
+            c => {
+                if c.is_letter() {
+                    let identifier = self.read_identifier();
+                    return match KEYWORDS.get(&identifier.as_str()) {
+                        Some(tok) => Some(tok.clone()),
+                        None => Some(Token::Identifier(identifier)),
+                    };
+                }
+
+                if c.is_ascii_digit() {
+                    let num = self.read_number();
+                    return Some(Token::Int(num.to_string()));
+                }
+
+                Token::Illegal
+            }
+        };
+
+        self.read_char();
+        Some(token)
     }
 }

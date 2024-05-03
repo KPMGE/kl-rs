@@ -7,7 +7,7 @@ fn given_an_integer_expression_it_should_evaluate_to_the_right_object() {
     let expected_objects = vec![Object::Integer(5), Object::Integer(10), Object::Integer(20)];
 
     test_codes.iter().enumerate().for_each(|(idx, code)| {
-        let lexer = Lexer::new(code.to_string());
+        let lexer = Lexer::new(code);
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
         let node = match parsed_program {
@@ -28,7 +28,7 @@ fn given_boolean_expressions_it_should_evaluate_to_the_right_object() {
     let expected_objects = vec![Object::Boolean(true), Object::Boolean(false)];
 
     test_codes.iter().enumerate().for_each(|(idx, code)| {
-        let lexer = Lexer::new(code.to_string());
+        let lexer = Lexer::new(code);
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
         let node = match parsed_program {
@@ -55,7 +55,7 @@ fn given_prefix_expressions_it_should_evaluate_correctly() {
     ];
 
     test_codes.iter().enumerate().for_each(|(idx, code)| {
-        let lexer = Lexer::new(code.to_string());
+        let lexer = Lexer::new(code);
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
         let node = match parsed_program {
@@ -90,7 +90,7 @@ fn given_if_else_expressions_it_should_evaluate_correctly() {
     ];
 
     test_codes.iter().enumerate().for_each(|(idx, code)| {
-        let lexer = Lexer::new(code.to_string());
+        let lexer = Lexer::new(code);
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
         let node = match parsed_program {
@@ -117,7 +117,7 @@ fn given_return_statements_it_should_evaluate_correctly() {
     ];
 
     test_codes.iter().enumerate().for_each(|(idx, code)| {
-        let lexer = Lexer::new(code.to_string());
+        let lexer = Lexer::new(code);
         let mut parser = Parser::new(lexer);
         let parsed_program = parser.parse_program();
         let node = match parsed_program {
@@ -137,7 +137,7 @@ fn given_a_string_expression_it_should_evaluate_correctly() {
     let code = "\"kevin\"";
     let expected_obj = Object::String("kevin".to_string());
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
     let parsed_program = parser.parse_program();
     let node = match parsed_program {
@@ -156,7 +156,7 @@ fn given_a_string_expression_when_calling_len_it_should_evaluate_correctly() {
     let code = "len(\"kevin\")";
     let expected_obj = Object::Integer(5);
 
-    let lexer = Lexer::new(code.to_string());
+    let lexer = Lexer::new(code);
     let mut parser = Parser::new(lexer);
     let parsed_program = parser.parse_program();
     let node = match parsed_program {

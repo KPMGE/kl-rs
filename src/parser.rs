@@ -1,6 +1,5 @@
 use crate::{
     ast::{AstNode, BlockStatement, Expression, Statement},
-    lexer::Lexer,
     token::Token,
 };
 
@@ -15,25 +14,28 @@ enum Precedence {
     Call,
 }
 
-#[derive(Debug, Clone)]
-pub struct Parser {
+#[derive(Debug)]
+pub struct Parser<L: Iterator<Item = Token>> {
     pub errors: Vec<String>,
-    lexer: Lexer,
-    current_token: Token,
-    next_token: Token,
+    lexer: L,
+    current_token: Option<Token>,
+    next_token: Option<Token>,
 }
 
-impl Parser {
-    pub fn new(mut lexer: Lexer) -> Self {
-        let current_token = lexer.next_token();
-        let next_token = lexer.next_token();
-
-        Parser {
+impl<L> Parser<L>
+where
+    L: Iterator<Item = Token>,
+{
+    pub fn new(lexer: L) -> Self {
+        let mut p = Parser {
             lexer,
-            current_token,
-            next_token,
+            current_token: None,
+            next_token: None,
             errors: Vec::new(),
-        }
+        };
+        p.advance_tokens();
+        p.advance_tokens();
+        p
     }
 
     pub fn parse_program(&mut self) -> AstNode {
@@ -41,9 +43,13 @@ impl Parser {
             statements: Vec::new(),
         };
 
-        while self.current_token != Token::Eof {
+        while let Some(token) = &self.current_token {
+            if *token == Token::Eof {
+                break;
+            }
+
             match program {
-                AstNode::Program { ref mut statements } => match self.current_token {
+                AstNode::Program { ref mut statements } => match token {
                     Token::Let => {
                         if let Some(statement) = self.parse_let_statement() {
                             statements.push(statement);
@@ -72,41 +78,48 @@ impl Parser {
     fn parse_let_statement(&mut self) -> Option<AstNode> {
         self.advance_tokens();
 
-        if !matches!(self.current_token, Token::Identifier(_)) {
-            self.report_expected_token_error(
-                Token::Identifier("some identifier".to_string()),
-                self.current_token.clone(),
-            );
-            return None;
+        let token = self.current_token.clone()?;
+        match token {
+            Token::Identifier(..) => {
+                let name = Box::new(self.parse_identifier()?);
+
+                self.advance_tokens();
+
+                if self.current_token.clone()? != Token::Assign {
+                    self.report_expected_token_error(Token::Assign, self.current_token.clone());
+                    return None;
+                }
+
+                self.advance_tokens();
+
+                let value = Box::new(self.parse_expression(Precedence::Lowest)?);
+
+                self.advance_tokens();
+
+                if self.current_token.clone()? != Token::Semicolon {
+                    self.report_expected_token_error(Token::Semicolon, self.current_token.clone());
+                    return None;
+                }
+
+                Some(AstNode::Statement(Box::new(Statement::LetStatement {
+                    name,
+                    value,
+                })))
+            }
+            _ => {
+                self.report_expected_token_error(
+                    Token::Identifier("some identifier".to_string()),
+                    self.current_token.clone(),
+                );
+                None
+            }
         }
-
-        let name = Box::new(self.parse_identifier()?);
-
-        self.advance_tokens();
-
-        if self.current_token != Token::Assign {
-            self.report_expected_token_error(Token::Assign, self.current_token.clone());
-            return None;
-        }
-
-        self.advance_tokens();
-
-        let value = Box::new(self.parse_expression(Precedence::Lowest)?);
-
-        self.advance_tokens();
-
-        if self.current_token != Token::Semicolon {
-            self.report_expected_token_error(Token::Semicolon, self.current_token.clone());
-            return None;
-        }
-
-        Some(AstNode::Statement(Box::new(Statement::LetStatement { name, value })))
     }
 
     fn parse_expression_statement(&mut self) -> Option<AstNode> {
         let expression = Box::new(self.parse_expression(Precedence::Lowest)?);
 
-        if self.current_token == Token::Semicolon {
+        if self.current_token.clone()? == Token::Semicolon {
             self.advance_tokens();
         }
 
@@ -116,7 +129,7 @@ impl Parser {
     fn parse_return_statement(&mut self) -> Option<AstNode> {
         self.advance_tokens();
 
-        if !matches!(self.current_token, Token::Int(_)) {
+        if !matches!(self.current_token.clone()?, Token::Int(_)) {
             self.report_expected_token_error(
                 Token::Int("number".to_string()),
                 self.current_token.clone(),
@@ -126,17 +139,19 @@ impl Parser {
 
         let expression = Box::new(self.parse_expression(Precedence::Lowest)?);
 
-        Some(AstNode::Statement(Box::new(Statement::ReturnStatement(expression))))
+        Some(AstNode::Statement(Box::new(Statement::ReturnStatement(
+            expression,
+        ))))
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Option<Expression> {
-        let prefix_parse_fn = self.current_token.prefix_parse_fn()?;
+        let prefix_parse_fn = self.current_token.clone()?.prefix_parse_fn()?;
         let left_expression = prefix_parse_fn(self)?;
 
-        let is_next_token_precedence_higher = precedence < self.next_token.precedence();
+        let is_next_token_precedence_higher = precedence < self.next_token.clone()?.precedence();
 
         while !self.expect_current_token(Token::Semicolon) && is_next_token_precedence_higher {
-            if let Some(infix_parse_fn) = self.next_token.get_infix_parse_fn() {
+            if let Some(infix_parse_fn) = self.next_token.clone()?.get_infix_parse_fn() {
                 self.advance_tokens();
                 return infix_parse_fn(self, left_expression);
             }
@@ -146,7 +161,8 @@ impl Parser {
     }
 
     fn expect_current_token(&mut self, token: Token) -> bool {
-        if self.current_token == token {
+        // TODO: handle unwrap
+        if self.current_token.clone().unwrap() == token {
             self.advance_tokens();
             return true;
         }
@@ -154,7 +170,8 @@ impl Parser {
     }
 
     fn expect_next_token(&mut self, token: Token) -> bool {
-        if self.next_token == token {
+        // TODO: handle unwrap
+        if self.next_token.clone().unwrap() == token {
             self.advance_tokens();
             return true;
         }
@@ -162,21 +179,21 @@ impl Parser {
     }
 
     fn parse_string(&mut self) -> Option<Expression> {
-        if let Token::String(s) = &self.current_token {
+        if let Token::String(s) = &self.current_token.clone()? {
             return Some(Expression::String(s.clone()));
         }
         None
     }
 
     fn parse_identifier(&mut self) -> Option<Expression> {
-        if let Token::Identifier(name) = &self.current_token {
+        if let Token::Identifier(name) = &self.current_token.clone()? {
             return Some(Expression::Identifier(name.clone()));
         }
         None
     }
 
     fn parse_int(&mut self) -> Option<Expression> {
-        if let Token::Int(num_str) = &self.current_token {
+        if let Token::Int(num_str) = &self.current_token.clone()? {
             let num = match num_str.parse::<i32>() {
                 Ok(num) => Some(num),
                 Err(_) => {
@@ -197,14 +214,14 @@ impl Parser {
 
         let mut elements = Vec::new();
 
-        if self.current_token == Token::RightBracket {
+        if let Some(Token::RightBracket) = self.current_token {
             return Some(Expression::Array(elements));
         }
 
         let exp = self.parse_expression(Precedence::Lowest)?;
         elements.push(exp);
 
-        while self.next_token == Token::Comma {
+        while let Some(Token::Comma) = self.next_token {
             self.advance_tokens();
             self.advance_tokens();
 
@@ -223,8 +240,9 @@ impl Parser {
     }
 
     fn parse_infix_expression(&mut self, left_expression: Expression) -> Option<Expression> {
-        let operator = self.current_token.clone();
-        let precedence = self.next_token.precedence();
+        // TODO: handle unwrap
+        let operator = self.current_token.clone()?;
+        let precedence = self.next_token.clone()?.precedence();
 
         self.advance_tokens();
 
@@ -250,7 +268,8 @@ impl Parser {
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
-        let operator = self.current_token.clone();
+        // TODO: handle unwrap
+        let operator = self.current_token.clone().unwrap();
 
         self.advance_tokens();
 
@@ -261,7 +280,7 @@ impl Parser {
     }
 
     fn parse_boolean_expression(&mut self) -> Option<Expression> {
-        let value = match self.current_token {
+        let value = match self.current_token.clone()? {
             Token::True => true,
             Token::False => false,
             _ => {
@@ -292,12 +311,12 @@ impl Parser {
 
         self.advance_tokens();
 
-        let alternative = match self.current_token {
+        let alternative = match self.current_token.clone()? {
             Token::Else => {
                 self.advance_tokens();
                 Some(Box::new(self.parse_block_statement()?))
-            },
-            _ => None
+            }
+            _ => None,
         };
 
         Some(Expression::IfExpression {
@@ -310,7 +329,7 @@ impl Parser {
     fn parse_function_expression(&mut self) -> Option<Expression> {
         self.advance_tokens();
 
-        if self.current_token != Token::LeftParentesis {
+        if self.current_token.clone()? != Token::LeftParentesis {
             self.report_expected_token_error(Token::LeftParentesis, self.current_token.clone());
             self.advance_tokens();
             return None;
@@ -332,13 +351,15 @@ impl Parser {
 
         self.advance_tokens();
 
-        let identifier = self.current_token.clone();
+        // TODO: handle unwrap
+        let identifier = self.current_token.clone().unwrap();
         parameters.push(identifier);
 
-        while self.next_token == Token::Comma {
+        while let Some(Token::Comma) = self.next_token {
             self.advance_tokens();
             self.advance_tokens();
-            let identifier = self.current_token.clone();
+            // TODO: handle unwrap
+            let identifier = self.current_token.clone().unwrap();
             parameters.push(identifier);
         }
 
@@ -360,8 +381,12 @@ impl Parser {
 
         let mut statements = Vec::new();
 
-        while self.current_token != Token::RightBrace && self.current_token != Token::Eof {
-            match self.current_token {
+        while let Some(token) = &self.current_token {
+            if *token == Token::RightBrace || *token == Token::Eof {
+                break;
+            }
+
+            match token {
                 Token::Let => {
                     if let Some(statement) = self.parse_let_statement() {
                         statements.push(statement);
@@ -398,7 +423,7 @@ impl Parser {
     fn parse_call_expression_arguments(&mut self) -> Option<Vec<Expression>> {
         let mut arguments = Vec::new();
 
-        if self.current_token == Token::RightParentesis {
+        if self.current_token.clone()? == Token::RightParentesis {
             self.advance_tokens();
             return Some(arguments);
         }
@@ -406,7 +431,7 @@ impl Parser {
         let expression = self.parse_expression(Precedence::Lowest)?;
         arguments.push(expression);
 
-        while self.next_token == Token::Comma {
+        while let Some(Token::Comma) = self.next_token {
             self.advance_tokens();
             self.advance_tokens();
             let expression = self.parse_expression(Precedence::Lowest)?;
@@ -422,14 +447,14 @@ impl Parser {
     }
 
     fn advance_tokens(&mut self) {
-        self.current_token = self.next_token.clone();
-        self.next_token = self.lexer.next_token();
+        self.current_token = self.next_token.take();
+        self.next_token = self.lexer.next();
     }
 
-    fn report_expected_token_error(&mut self, expected_token: Token, actual_token: Token) {
+    fn report_expected_token_error(&mut self, expected_token: Token, actual_token: Option<Token>) {
         self.errors.push(format!(
             "expected token to be '{:?}' got '{:?}'",
-            expected_token, actual_token
+            Some(expected_token), actual_token
         ));
     }
 
@@ -437,6 +462,9 @@ impl Parser {
         self.errors.push(message.to_string())
     }
 }
+
+type InfixParseFnOption<L> = Option<fn(&mut Parser<L>, Expression) -> Option<Expression>>;
+type PrefixParseFnOption<L> = Option<fn(&mut Parser<L>) -> Option<Expression>>;
 
 impl Token {
     fn precedence(&self) -> Precedence {
@@ -450,7 +478,10 @@ impl Token {
         }
     }
 
-    fn prefix_parse_fn(&self) -> Option<fn(&mut Parser) -> Option<Expression>> {
+    fn prefix_parse_fn<L>(&self) -> PrefixParseFnOption<L>
+    where
+        L: Iterator<Item = Token>,
+    {
         match self {
             Token::String(_) => Some(Parser::parse_string),
             Token::Identifier(_) => Some(Parser::parse_identifier),
@@ -466,7 +497,10 @@ impl Token {
         }
     }
 
-    fn get_infix_parse_fn(&self) -> Option<fn(&mut Parser, Expression) -> Option<Expression>> {
+    fn get_infix_parse_fn<L>(&self) -> InfixParseFnOption<L>
+    where
+        L: Iterator<Item = Token>,
+    {
         match self {
             Token::Plus => Some(Parser::parse_infix_expression),
             Token::Minus => Some(Parser::parse_infix_expression),

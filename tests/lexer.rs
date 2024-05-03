@@ -23,10 +23,10 @@ fn given_code_with_single_characters_it_should_parse_correctly() {
         Token::Eof,
     ];
 
-    let mut lexer = Lexer::new(code.to_string());
+    let mut lexer = Lexer::new(code);
 
     (0..code.len()).for_each(|idx| {
-        let token = lexer.next_token();
+        let token = lexer.next().unwrap();
         let expected_token = &expected_tokens[idx];
         assert!(token == *expected_token);
     })
@@ -46,10 +46,10 @@ fn given_code_with_keywords_it_should_parse_correctly() {
         Token::Return,
     ];
 
-    let mut lexer = Lexer::new(code.to_string());
+    let mut lexer = Lexer::new(code);
 
     (0..expected_tokens.len()).for_each(|idx| {
-        let token = lexer.next_token();
+        let token = lexer.next().unwrap();
         let expected_token = &expected_tokens[idx];
         assert!(token == *expected_token);
     });
@@ -59,9 +59,9 @@ fn given_code_with_keywords_it_should_parse_correctly() {
 fn given_code_with_identifiers_it_should_parse_correctly() {
     let code = "testident";
 
-    let mut lexer = Lexer::new(code.to_string());
+    let mut lexer = Lexer::new(code);
 
-    let token = lexer.next_token();
+    let token = lexer.next().unwrap();
     let expected_token = Token::Identifier(code.to_string());
 
     assert!(token == expected_token);
@@ -71,9 +71,9 @@ fn given_code_with_identifiers_it_should_parse_correctly() {
 fn given_code_with_integers_it_should_parse_correctly() {
     let code = "10";
 
-    let mut lexer = Lexer::new(code.to_string());
+    let mut lexer = Lexer::new(code);
 
-    let token = lexer.next_token();
+    let token = lexer.next().unwrap();
     let expected_token = Token::Int("10".to_string());
 
     assert!(token == expected_token);
@@ -83,9 +83,9 @@ fn given_code_with_integers_it_should_parse_correctly() {
 fn given_code_with_a_strinig_it_should_parse_correctly() {
     let code = "\"kevin\"";
 
-    let mut lexer = Lexer::new(code.to_string());
+    let mut lexer = Lexer::new(code);
 
-    let token = lexer.next_token();
+    let token = lexer.next().unwrap();
     let expected_token = Token::String("kevin".to_string());
 
     assert!(token == expected_token);
@@ -95,9 +95,9 @@ fn given_code_with_a_strinig_it_should_parse_correctly() {
 fn given_code_with_comments_it_should_parse_correctly() {
     let code = "/*any comment*/1";
 
-    let mut lexer = Lexer::new(code.to_string());
+    let mut lexer = Lexer::new(code);
 
-    let token = lexer.next_token();
+    let token = lexer.next().unwrap();
     let expected_token = Token::Int(1.to_string());
 
     assert!(token == expected_token);

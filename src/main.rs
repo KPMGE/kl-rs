@@ -42,12 +42,12 @@ fn main() {
             _ => {}
         }
 
-        let lexer = Lexer::new(input.to_string());
-        let mut parser = Parser::new(lexer.clone());
+        let lexer = Lexer::new(input.as_str());
+        let mut parser = Parser::new(lexer);
 
         if VERBOSE.flag {
-            debug_lexer(lexer.clone());
-            debug_parser(parser.clone());
+            debug_lexer(Lexer::new(input.as_str()));
+            debug_parser(Parser::new(Lexer::new(input.as_str())));
         }
 
         let program = parser.parse_program();
@@ -60,17 +60,17 @@ fn main() {
 fn debug_lexer(mut lexer: Lexer) {
     println!("Tokens: \n");
 
-    let mut token = lexer.next_token();
+    let mut token = lexer.next().unwrap();
 
     while token != Token::Eof {
         println!("{:?}", token);
-        token = lexer.next_token();
+        token = lexer.next().unwrap();
     }
 
     println!();
 }
 
-fn debug_parser(mut parser: Parser) {
+fn debug_parser<L: Iterator<Item = Token>>(mut parser: Parser<L>) {
     let program = parser.parse_program();
 
     println!("Parsed program: ");
