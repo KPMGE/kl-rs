@@ -1,6 +1,5 @@
 use crate::{
-    ast::{AstNode, BlockStatement, Expression, Statement},
-    token::Token,
+    ast::{AstNode, BlockStatement, Expression, Statement}, lexer::Lexer, token::Token
 };
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -15,18 +14,15 @@ enum Precedence {
 }
 
 #[derive(Debug)]
-pub struct Parser<L: Iterator<Item = Token>> {
+pub struct Parser<'p> {
     pub errors: Vec<String>,
-    lexer: L,
+    lexer: Lexer<'p>,
     current_token: Option<Token>,
     next_token: Option<Token>,
 }
 
-impl<L> Parser<L>
-where
-    L: Iterator<Item = Token>,
-{
-    pub fn new(lexer: L) -> Self {
+impl<'p> Parser<'p> {
+    pub fn new(lexer: Lexer<'p>) -> Self {
         let mut p = Parser {
             lexer,
             current_token: None,
@@ -151,7 +147,7 @@ where
         let is_next_token_precedence_higher = precedence < self.next_token.clone()?.precedence();
 
         while !self.expect_current_token(Token::Semicolon) && is_next_token_precedence_higher {
-            if let Some(infix_parse_fn) = self.next_token.clone()?.get_infix_parse_fn() {
+            if let Some(infix_parse_fn) = self.next_token.clone()?.infix_parse_fn() {
                 self.advance_tokens();
                 return infix_parse_fn(self, left_expression);
             }
@@ -463,8 +459,8 @@ where
     }
 }
 
-type InfixParseFnOption<L> = Option<fn(&mut Parser<L>, Expression) -> Option<Expression>>;
-type PrefixParseFnOption<L> = Option<fn(&mut Parser<L>) -> Option<Expression>>;
+type InfixParserFn<'p> = fn(&mut Parser<'p>, Expression) -> Option<Expression>;
+type PrefixParseFn<'p> = fn(&mut Parser<'p>) -> Option<Expression>;
 
 impl Token {
     fn precedence(&self) -> Precedence {
@@ -478,10 +474,7 @@ impl Token {
         }
     }
 
-    fn prefix_parse_fn<L>(&self) -> PrefixParseFnOption<L>
-    where
-        L: Iterator<Item = Token>,
-    {
+    fn prefix_parse_fn<'p>(&self) -> Option<PrefixParseFn<'p>> {
         match self {
             Token::String(_) => Some(Parser::parse_string),
             Token::Identifier(_) => Some(Parser::parse_identifier),
@@ -497,10 +490,7 @@ impl Token {
         }
     }
 
-    fn get_infix_parse_fn<L>(&self) -> InfixParseFnOption<L>
-    where
-        L: Iterator<Item = Token>,
-    {
+    fn infix_parse_fn<'p>(&self) -> Option<InfixParserFn<'p>> {
         match self {
             Token::Plus => Some(Parser::parse_infix_expression),
             Token::Minus => Some(Parser::parse_infix_expression),

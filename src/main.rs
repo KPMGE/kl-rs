@@ -70,7 +70,7 @@ fn debug_lexer(mut lexer: Lexer) {
     println!();
 }
 
-fn debug_parser<L: Iterator<Item = Token>>(mut parser: Parser<L>) {
+fn debug_parser(mut parser: Parser) {
     let program = parser.parse_program();
 
     println!("Parsed program: ");
