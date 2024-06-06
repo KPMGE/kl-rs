@@ -9,7 +9,7 @@ gflags::define! {
     -v, --verbose = false
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stdin = std::io::stdin();
     let mut handle = stdin.lock();
     gflags::parse();
@@ -50,11 +50,13 @@ fn main() {
             debug_parser(Parser::new(Lexer::new(input.as_str())));
         }
 
-        let program = parser.parse_program();
+        let program = parser.parse_program()?;
 
         let object = evaluator.eval(program);
         println!("{}", object.inspect());
     }
+
+    Ok(())
 }
 
 fn debug_lexer(mut lexer: Lexer) {
@@ -71,19 +73,18 @@ fn debug_lexer(mut lexer: Lexer) {
 }
 
 fn debug_parser(mut parser: Parser) {
-    let program = parser.parse_program();
-
-    println!("Parsed program: ");
-    if let kl_rs::ast::AstNode::Program { ref statements } = program {
-        for statement in statements {
-            println!("statement: {:#?}", statement);
+    match parser.parse_program() {
+        Ok(node) => {
+            println!("Parsed program: ");
+            if let kl_rs::ast::AstNode::Program { ref statements } = node {
+                for statement in statements {
+                    println!("statement: {:#?}", statement);
+                }
+            }
+            println!();
+        }
+        Err(e) => {
+            panic!("{:#?}", e);
         }
     }
-    println!();
-
-    println!("ERRORS: ");
-    for err in parser.errors {
-        println!("ERROR: {:?}", err);
-    }
-    println!();
 }
