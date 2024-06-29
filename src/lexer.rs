@@ -34,30 +34,26 @@ impl<'l> Lexer<'l> {
         }
     }
 
-    fn read_string(&mut self) -> String {
-        if self.current_char.unwrap() != '"' {
-            panic!(
-                "Unexpected start of string, expected: '\"', got: {:?}",
-                self.current_char
-            );
+    fn read_string(&mut self) -> Option<&str> {
+        if self.current_char? != '"' {
+            return None;
         }
 
-        let mut str = String::new();
-
         self.read_char();
+
+        let start_pos = self.current_position;
 
         while let Some(c) = self.current_char {
             if c == '"' {
                 break;
             }
-            str.push(c);
             self.read_char();
         }
 
-        str
+        Some(&self.input[start_pos..self.current_position])
     }
 
-    fn read_number(&mut self) -> String {
+    fn read_number(&mut self) -> &str {
         let start_pos = self.current_position;
 
         while let Some(c) = self.current_char {
@@ -68,10 +64,10 @@ impl<'l> Lexer<'l> {
             break;
         }
 
-        self.input[start_pos..self.current_position].to_string()
+        &self.input[start_pos..self.current_position]
     }
 
-    fn read_identifier(&mut self) -> String {
+    fn read_identifier(&mut self) -> &str {
         let start_pos = self.current_position;
 
         while let Some(c) = self.current_char {
@@ -82,8 +78,7 @@ impl<'l> Lexer<'l> {
             break;
         }
 
-        let identifier = &self.input[start_pos..self.current_position];
-        identifier.to_string()
+        &self.input[start_pos..self.current_position]
     }
 
     fn peek_char(&self, pos: usize) -> Option<char> {
@@ -147,7 +142,7 @@ impl Iterator for Lexer<'_> {
             return Some(Token::Eof);
         }
 
-        let ch = self.current_char.unwrap();
+        let ch = self.current_char?;
 
         let token = match ch {
             '(' => Token::LeftParentesis,
@@ -160,12 +155,12 @@ impl Iterator for Lexer<'_> {
             '>' => Token::GreaterThan,
             ',' => Token::Comma,
             ';' => Token::Semicolon,
-            '"' => Token::String(self.read_string()),
+            '"' => Token::String(self.read_string()?.to_string()),
             '*' => Token::Asterisk,
             '[' => Token::LeftBracket,
             ']' => Token::RightBracket,
             '/' => {
-                if self.peek_char(self.read_position).unwrap() == '*' {
+                if self.peek_char(self.read_position)? == '*' {
                     self.skip_comments();
                     return self.next();
                 }
@@ -188,9 +183,9 @@ impl Iterator for Lexer<'_> {
             c => {
                 if c.is_letter() {
                     let identifier = self.read_identifier();
-                    return match KEYWORDS.get(&identifier.as_str()) {
+                    return match KEYWORDS.get(identifier) {
                         Some(tok) => Some(tok.clone()),
-                        None => Some(Token::Identifier(identifier)),
+                        None => Some(Token::Identifier(identifier.to_string())),
                     };
                 }
 
