@@ -1,8 +1,2 @@
-[package]
-name = "kl-rs"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-gflags = "0.3.12"
-lazy_static = "1.4.0"
+[workspace]
+members = [ "kvm","lang"]
