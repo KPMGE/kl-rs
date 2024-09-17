@@ -1,10 +1,21 @@
+use std::error::Error;
+use thiserror::Error;
+
 #[derive(Debug)]
 enum Instruction {
     Push(i32),
     Add,
 }
 
-const STACK_CAPACITY: usize = 1024;
+const STACK_CAPACITY: usize = 1;
+
+#[derive(Debug, Error)]
+enum KvmError {
+    #[error("Stack overflow error")]
+    StackOverflow,
+    #[error("Stack underflow")]
+    StackUnderflow,
+}
 
 struct Kvm {
     stack: Vec<i32>,
@@ -19,19 +30,24 @@ impl Kvm {
         }
     }
 
-    fn execute_program(&mut self) {
+    fn execute_program(&mut self) -> Result<(), KvmError> {
         for inst in self.program.iter() {
             match inst {
                 Instruction::Push(n) => {
+                    if self.stack.len() >= STACK_CAPACITY {
+                        return Err(KvmError::StackOverflow);
+                    }
                     self.stack.push(*n);
                 }
                 Instruction::Add => {
-                    let n1 = self.stack.pop().unwrap();
-                    let n2 = self.stack.pop().unwrap();
+                    let n1 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                    let n2 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
                     self.stack.push(n1 + n2);
                 }
             }
         }
+
+        Ok(())
     }
 
     fn load_program(&mut self, prog: Vec<Instruction>) {
@@ -49,8 +65,7 @@ impl Kvm {
     }
 }
 
-
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let mut vm = Kvm::new();
 
     let prog = vec![Instruction::Push(1), Instruction::Push(3), Instruction::Add];
@@ -61,9 +76,9 @@ fn main() {
     println!("------");
 
     vm.dump_stack();
-    vm.execute_program();
-
-    println!("------");
+    vm.execute_program()?;
 
     vm.dump_stack();
+
+    Ok(())
 }
