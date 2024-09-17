@@ -1,16 +1,39 @@
-use std::error::Error;
+use std::{
+    error::Error,
+    fs::File,
+    io::{self, Write},
+};
 use thiserror::Error;
 
 #[derive(Debug, Clone)]
 enum Instruction {
+    Halt,
     Add,
     Sub,
     Div,
     Mul,
-    Halt,
     Push(i32),
     Jmp(usize),
     Dup(usize),
+}
+
+impl Instruction {
+    fn as_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        match *self {
+            Instruction::Halt => bytes.push(0x0),
+            Instruction::Add => bytes.push(0x1),
+            Instruction::Sub => bytes.push(0x2),
+            Instruction::Div => bytes.push(0x3),
+            Instruction::Mul => bytes.push(0x4),
+            Instruction::Push(n) => bytes.extend(vec![0x5, n.to_le_bytes()[0]]),
+            Instruction::Jmp(n) => bytes.extend(vec![0x6, n.to_le_bytes()[0]]),
+            Instruction::Dup(n) => bytes.extend(vec![0x7, n.to_le_bytes()[0]]),
+        };
+
+        bytes
+    }
 }
 
 const STACK_CAPACITY: usize = 1024;
@@ -28,7 +51,7 @@ struct Kvm {
     stack: Vec<i32>,
     program: Vec<Instruction>,
     ip: usize,
-    halt: bool
+    halt: bool,
 }
 impl Kvm {
     fn new() -> Self {
@@ -36,7 +59,7 @@ impl Kvm {
             stack: Vec::with_capacity(STACK_CAPACITY),
             program: Vec::new(),
             ip: 0,
-            halt: false
+            halt: false,
         }
     }
 
@@ -81,9 +104,7 @@ impl Kvm {
             Instruction::Jmp(addr) => {
                 self.ip = addr;
             }
-            Instruction::Halt => {
-                self.halt = true
-            }
+            Instruction::Halt => self.halt = true,
             Instruction::Dup(addr) => {
                 if self.stack.len() >= STACK_CAPACITY {
                     return Err(KvmError::StackOverflow);
@@ -114,8 +135,18 @@ impl Kvm {
         Ok(())
     }
 
-    fn load_program(&mut self, prog: Vec<Instruction>) {
+    fn load_program_from_vec(&mut self, prog: Vec<Instruction>) {
         self.program.extend(prog);
+    }
+
+    fn save_program_to_file(&self, file_path: &str) {
+        let mut file = File::create(file_path).unwrap();
+        let prog_bin: Vec<u8> = self
+            .program
+            .iter()
+            .flat_map(|inst| inst.as_bytes())
+            .collect();
+        file.write_all(prog_bin.as_ref()).unwrap();
     }
 
     fn dump_stack(&self) {
@@ -141,7 +172,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         Instruction::Jmp(2),
     ];
 
-    vm.load_program(prog);
+    vm.load_program_from_vec(prog);
+    vm.save_program_to_file("test.kvm");
     vm.execute_program()?;
     vm.dump_stack();
 
