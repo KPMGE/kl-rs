@@ -7,6 +7,7 @@ enum Instruction {
     Sub,
     Div,
     Mul,
+    Halt,
     Push(i32),
     Jmp(usize),
     Dup(usize),
@@ -27,6 +28,7 @@ struct Kvm {
     stack: Vec<i32>,
     program: Vec<Instruction>,
     ip: usize,
+    halt: bool
 }
 impl Kvm {
     fn new() -> Self {
@@ -34,6 +36,7 @@ impl Kvm {
             stack: Vec::with_capacity(STACK_CAPACITY),
             program: Vec::new(),
             ip: 0,
+            halt: false
         }
     }
 
@@ -77,6 +80,9 @@ impl Kvm {
             }
             Instruction::Jmp(addr) => {
                 self.ip = addr;
+            }
+            Instruction::Halt => {
+                self.halt = true
             }
             Instruction::Dup(addr) => {
                 if self.stack.len() >= STACK_CAPACITY {
