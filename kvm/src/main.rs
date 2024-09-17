@@ -5,6 +5,9 @@ use thiserror::Error;
 enum Instruction {
     Push(i32),
     Add,
+    Sub,
+    Div,
+    Mul,
 }
 
 const STACK_CAPACITY: usize = 1;
@@ -15,6 +18,8 @@ enum KvmError {
     StackOverflow,
     #[error("Stack underflow")]
     StackUnderflow,
+    #[error("Division by zero")]
+    DivisionByZero,
 }
 
 struct Kvm {
@@ -43,6 +48,26 @@ impl Kvm {
                     let n1 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
                     let n2 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
                     self.stack.push(n1 + n2);
+                }
+                Instruction::Sub => {
+                    let n1 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                    let n2 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                    self.stack.push(n1 - n2);
+                }
+                Instruction::Div => {
+                    let n1 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                    let n2 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+
+                    if n2 == 0 {
+                        return Err(KvmError::DivisionByZero);
+                    }
+
+                    self.stack.push(n1 / n2);
+                }
+                Instruction::Mul => {
+                    let n1 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                    let n2 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                    self.stack.push(n1 * n2);
                 }
             }
         }
