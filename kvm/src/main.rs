@@ -1,7 +1,7 @@
 use std::{
     error::Error,
     fs::File,
-    io::{self, Write},
+    io::{Read, Write},
 };
 use thiserror::Error;
 
@@ -13,23 +13,32 @@ enum Instruction {
     Div,
     Mul,
     Push(i32),
-    Jmp(usize),
-    Dup(usize),
+    Jmp(u32),
+    Dup(u32),
 }
 
 impl Instruction {
     fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
-        match *self {
+        match self {
             Instruction::Halt => bytes.push(0x0),
             Instruction::Add => bytes.push(0x1),
             Instruction::Sub => bytes.push(0x2),
             Instruction::Div => bytes.push(0x3),
             Instruction::Mul => bytes.push(0x4),
-            Instruction::Push(n) => bytes.extend(vec![0x5, n.to_le_bytes()[0]]),
-            Instruction::Jmp(n) => bytes.extend(vec![0x6, n.to_le_bytes()[0]]),
-            Instruction::Dup(n) => bytes.extend(vec![0x7, n.to_le_bytes()[0]]),
+            Instruction::Push(n) => {
+                bytes.push(0x5);
+                bytes.extend(n.to_le_bytes());
+            }
+            Instruction::Jmp(n) => {
+                bytes.push(0x6);
+                bytes.extend(n.to_le_bytes());
+            }
+            Instruction::Dup(n) => {
+                bytes.push(0x7);
+                bytes.extend(n.to_le_bytes());
+            }
         };
 
         bytes
@@ -102,7 +111,7 @@ impl Kvm {
                 self.ip += 1;
             }
             Instruction::Jmp(addr) => {
-                self.ip = addr;
+                self.ip = addr as usize;
             }
             Instruction::Halt => self.halt = true,
             Instruction::Dup(addr) => {
@@ -110,7 +119,7 @@ impl Kvm {
                     return Err(KvmError::StackOverflow);
                 }
 
-                let idx = self.stack.len() - addr;
+                let idx = self.stack.len() - addr as usize;
                 if idx <= 0 {
                     return Err(KvmError::StackUnderflow);
                 }
@@ -128,7 +137,6 @@ impl Kvm {
         let n = 100;
         for _ in 0..n {
             let inst = self.program.get(self.ip).unwrap();
-            println!("Executing: {:?}", inst);
             self.execute_instruction(inst.clone())?;
         }
 
@@ -137,6 +145,68 @@ impl Kvm {
 
     fn load_program_from_vec(&mut self, prog: Vec<Instruction>) {
         self.program.extend(prog);
+    }
+
+    fn load_program_from_file(&mut self, file_path: &str) {
+        let mut file = File::open(file_path).unwrap();
+
+        let mut buffer = Vec::new();
+        file.read_to_end(&mut buffer).unwrap();
+
+        let mut instructions = Vec::new();
+        let mut i = 0;
+
+        while i < buffer.len() {
+            let byte = buffer[i];
+
+            let inst = match byte {
+                0x0 => Instruction::Halt,
+                0x1 => Instruction::Add,
+                0x2 => Instruction::Sub,
+                0x3 => Instruction::Div,
+                0x4 => Instruction::Mul,
+                0x5 => {
+                    let num = i32::from_le_bytes([
+                        buffer[i + 1],
+                        buffer[i + 2],
+                        buffer[i + 3],
+                        buffer[i + 4],
+                    ]);
+                    // skip 4 bytes
+                    i += 4;
+                    Instruction::Push(num)
+                }
+                0x6 => {
+                    let addr = u32::from_le_bytes([
+                        buffer[i + 1],
+                        buffer[i + 2],
+                        buffer[i + 3],
+                        buffer[i + 4],
+                    ]);
+                    // skip 8 bytes
+                    i += 4;
+
+                    Instruction::Jmp(addr)
+                }
+                0x7 => {
+                    let addr = u32::from_le_bytes([
+                        buffer[i + 1],
+                        buffer[i + 2],
+                        buffer[i + 3],
+                        buffer[i + 4],
+                    ]);
+                    // skip 8 bytes
+                    i += 4;
+                    Instruction::Dup(addr)
+                }
+                _ => panic!("Invalid instruction!"),
+            };
+
+            instructions.push(inst);
+            i += 1;
+        }
+
+        self.load_program_from_vec(instructions);
     }
 
     fn save_program_to_file(&self, file_path: &str) {
@@ -158,6 +228,11 @@ impl Kvm {
             self.stack.iter().for_each(|e| println!("{}", e));
         }
     }
+
+    fn dump_program(&self) {
+        println!("Program: ");
+        self.program.iter().for_each(|inst| println!("{:?}", inst));
+    }
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -174,6 +249,8 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     vm.load_program_from_vec(prog);
     vm.save_program_to_file("test.kvm");
+    vm.load_program_from_file("test.kvm");
+    vm.dump_program();
     vm.execute_program()?;
     vm.dump_stack();
 
