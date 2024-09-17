@@ -9,9 +9,10 @@ enum Instruction {
     Mul,
     Push(i32),
     Jmp(usize),
+    Dup(usize),
 }
 
-const STACK_CAPACITY: usize = 1;
+const STACK_CAPACITY: usize = 1024;
 
 #[derive(Debug, Error)]
 enum KvmError {
@@ -22,7 +23,6 @@ enum KvmError {
     #[error("Division by zero")]
     DivisionByZero,
 }
-
 struct Kvm {
     stack: Vec<i32>,
     program: Vec<Instruction>,
@@ -78,15 +78,30 @@ impl Kvm {
             Instruction::Jmp(addr) => {
                 self.ip = addr;
             }
+            Instruction::Dup(addr) => {
+                if self.stack.len() >= STACK_CAPACITY {
+                    return Err(KvmError::StackOverflow);
+                }
+
+                let idx = self.stack.len() - addr;
+                if idx <= 0 {
+                    return Err(KvmError::StackUnderflow);
+                }
+
+                let elem = self.stack.get(idx - 1).unwrap();
+                self.stack.push(*elem);
+                self.ip += 1;
+            }
         };
 
         Ok(())
     }
 
     fn execute_program(&mut self) -> Result<(), KvmError> {
-        let n = self.program.len();
+        let n = 100;
         for _ in 0..n {
             let inst = self.program.get(self.ip).unwrap();
+            println!("Executing: {:?}", inst);
             self.execute_instruction(inst.clone())?;
         }
 
@@ -111,7 +126,14 @@ impl Kvm {
 fn main() -> Result<(), Box<dyn Error>> {
     let mut vm = Kvm::new();
 
-    let prog = vec![Instruction::Push(1), Instruction::Push(3), Instruction::Add];
+    let prog = vec![
+        Instruction::Push(0),
+        Instruction::Push(1),
+        Instruction::Dup(1),
+        Instruction::Dup(1),
+        Instruction::Add,
+        Instruction::Jmp(2),
+    ];
 
     vm.load_program(prog);
     vm.execute_program()?;
