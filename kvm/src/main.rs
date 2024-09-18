@@ -12,8 +12,10 @@ enum Instruction {
     Sub,
     Div,
     Mul,
+    Eq,
     Push(i32),
     Jmp(u32),
+    JmpIf(u32),
     Dup(u32),
 }
 
@@ -27,16 +29,21 @@ impl Instruction {
             Instruction::Sub => bytes.push(0x2),
             Instruction::Div => bytes.push(0x3),
             Instruction::Mul => bytes.push(0x4),
+            Instruction::Eq => bytes.push(0x5),
             Instruction::Push(n) => {
-                bytes.push(0x5);
-                bytes.extend(n.to_le_bytes());
-            }
-            Instruction::Jmp(n) => {
                 bytes.push(0x6);
                 bytes.extend(n.to_le_bytes());
             }
-            Instruction::Dup(n) => {
+            Instruction::Jmp(n) => {
                 bytes.push(0x7);
+                bytes.extend(n.to_le_bytes());
+            }
+            Instruction::JmpIf(n) => {
+                bytes.push(0x8);
+                bytes.extend(n.to_le_bytes());
+            }
+            Instruction::Dup(n) => {
+                bytes.push(0x9);
                 bytes.extend(n.to_le_bytes());
             }
         };
@@ -128,6 +135,21 @@ impl Kvm {
                 self.stack.push(*elem);
                 self.ip += 1;
             }
+            Instruction::Eq => {
+                let n1 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                let n2 = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+                self.stack.push((n1 == n2) as i32);
+                self.ip += 1;
+            }
+            Instruction::JmpIf(addr) => {
+                let n = self.stack.pop().ok_or_else(|| KvmError::StackUnderflow)?;
+
+                if n > 0 {
+                    self.ip = addr as usize;
+                } else {
+                    self.ip += 1;
+                }
+            }
         };
 
         Ok(())
@@ -136,6 +158,11 @@ impl Kvm {
     fn execute_program(&mut self) -> Result<(), KvmError> {
         let n = 100;
         for _ in 0..n {
+            if self.halt {
+                println!("HALT");
+                break;
+            }
+
             let inst = self.program.get(self.ip).unwrap();
             self.execute_instruction(inst.clone())?;
         }
@@ -165,7 +192,8 @@ impl Kvm {
                 0x2 => Instruction::Sub,
                 0x3 => Instruction::Div,
                 0x4 => Instruction::Mul,
-                0x5 => {
+                0x5 => Instruction::Eq,
+                0x6 => {
                     let num = i32::from_le_bytes([
                         buffer[i + 1],
                         buffer[i + 2],
@@ -176,7 +204,7 @@ impl Kvm {
                     i += 4;
                     Instruction::Push(num)
                 }
-                0x6 => {
+                0x7 => {
                     let addr = u32::from_le_bytes([
                         buffer[i + 1],
                         buffer[i + 2],
@@ -188,7 +216,19 @@ impl Kvm {
 
                     Instruction::Jmp(addr)
                 }
-                0x7 => {
+                0x8 => {
+                    let addr = u32::from_le_bytes([
+                        buffer[i + 1],
+                        buffer[i + 2],
+                        buffer[i + 3],
+                        buffer[i + 4],
+                    ]);
+                    // skip 8 bytes
+                    i += 4;
+
+                    Instruction::JmpIf(addr)
+                }
+                0x9 => {
                     let addr = u32::from_le_bytes([
                         buffer[i + 1],
                         buffer[i + 2],
@@ -244,7 +284,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         Instruction::Dup(1),
         Instruction::Dup(1),
         Instruction::Add,
+        Instruction::Dup(1),
+        Instruction::Push(8),
+        Instruction::Eq,
+        Instruction::JmpIf(10),
         Instruction::Jmp(2),
+        Instruction::Halt,
     ];
 
     vm.load_program_from_vec(prog);
@@ -252,6 +297,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     vm.load_program_from_file("test.kvm");
     vm.dump_program();
     vm.execute_program()?;
+    println!("-----");
     vm.dump_stack();
 
     Ok(())
