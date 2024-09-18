@@ -48,6 +48,9 @@ dependencies = [
 [[package]]
 name = "ksm"
 version = "0.1.0"
+dependencies = [
+ "kvm",
+]
 
 [[package]]
 name = "kvm"

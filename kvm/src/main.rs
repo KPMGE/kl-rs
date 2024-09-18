@@ -1,56 +1,6 @@
-use std::{
-    error::Error,
-    fs::File,
-    io::{Read, Write},
-};
+use kvm::Instruction;
+use std::{error::Error, fs::File, io::Read};
 use thiserror::Error;
-
-#[derive(Debug, Clone)]
-enum Instruction {
-    Halt,
-    Add,
-    Sub,
-    Div,
-    Mul,
-    Eq,
-    Push(i32),
-    Jmp(u32),
-    JmpIf(u32),
-    Dup(u32),
-}
-
-impl Instruction {
-    fn as_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::new();
-
-        match self {
-            Instruction::Halt => bytes.push(0x0),
-            Instruction::Add => bytes.push(0x1),
-            Instruction::Sub => bytes.push(0x2),
-            Instruction::Div => bytes.push(0x3),
-            Instruction::Mul => bytes.push(0x4),
-            Instruction::Eq => bytes.push(0x5),
-            Instruction::Push(n) => {
-                bytes.push(0x6);
-                bytes.extend(n.to_le_bytes());
-            }
-            Instruction::Jmp(n) => {
-                bytes.push(0x7);
-                bytes.extend(n.to_le_bytes());
-            }
-            Instruction::JmpIf(n) => {
-                bytes.push(0x8);
-                bytes.extend(n.to_le_bytes());
-            }
-            Instruction::Dup(n) => {
-                bytes.push(0x9);
-                bytes.extend(n.to_le_bytes());
-            }
-        };
-
-        bytes
-    }
-}
 
 const STACK_CAPACITY: usize = 1024;
 
@@ -211,7 +161,7 @@ impl Kvm {
                         buffer[i + 3],
                         buffer[i + 4],
                     ]);
-                    // skip 8 bytes
+                    // skip 4 bytes
                     i += 4;
 
                     Instruction::Jmp(addr)
@@ -223,7 +173,7 @@ impl Kvm {
                         buffer[i + 3],
                         buffer[i + 4],
                     ]);
-                    // skip 8 bytes
+                    // skip 4 bytes
                     i += 4;
 
                     Instruction::JmpIf(addr)
@@ -235,7 +185,7 @@ impl Kvm {
                         buffer[i + 3],
                         buffer[i + 4],
                     ]);
-                    // skip 8 bytes
+                    // skip 4 bytes
                     i += 4;
                     Instruction::Dup(addr)
                 }
@@ -247,16 +197,6 @@ impl Kvm {
         }
 
         self.load_program_from_vec(instructions);
-    }
-
-    fn save_program_to_file(&self, file_path: &str) {
-        let mut file = File::create(file_path).unwrap();
-        let prog_bin: Vec<u8> = self
-            .program
-            .iter()
-            .flat_map(|inst| inst.as_bytes())
-            .collect();
-        file.write_all(prog_bin.as_ref()).unwrap();
     }
 
     fn dump_stack(&self) {
@@ -276,28 +216,18 @@ impl Kvm {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() < 2 {
+        panic!("Usage: kvm <input.kvm>");
+    }
+
     let mut vm = Kvm::new();
 
-    let prog = vec![
-        Instruction::Push(0),
-        Instruction::Push(1),
-        Instruction::Dup(1),
-        Instruction::Dup(1),
-        Instruction::Add,
-        Instruction::Dup(1),
-        Instruction::Push(8),
-        Instruction::Eq,
-        Instruction::JmpIf(10),
-        Instruction::Jmp(2),
-        Instruction::Halt,
-    ];
-
-    vm.load_program_from_vec(prog);
-    vm.save_program_to_file("test.kvm");
-    vm.load_program_from_file("test.kvm");
+    vm.load_program_from_file(&args[1]);
     vm.dump_program();
     vm.execute_program()?;
-    println!("-----");
+    println!("--------");
     vm.dump_stack();
 
     Ok(())
