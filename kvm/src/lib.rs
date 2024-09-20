@@ -1,18 +1,9 @@
+pub mod instruction;
+pub mod error;
+
 use std::{fmt::Display, fs::File, io::Write};
 
-#[derive(Debug, Clone)]
-pub enum Instruction {
-    Halt,
-    Add,
-    Sub,
-    Div,
-    Mul,
-    Eq,
-    Push(i32),
-    Jmp(u32),
-    JmpIf(u32),
-    Dup(u32),
-}
+use instruction::Instruction;
 
 // TODO: find a better place for this function
 pub fn save_program_to_file(program: Vec<Instruction>, file_path: &str) {

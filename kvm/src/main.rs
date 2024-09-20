@@ -1,18 +1,8 @@
-use kvm::Instruction;
+use kvm::{error::KvmError, instruction::Instruction};
 use std::{error::Error, fs::File, io::Read};
-use thiserror::Error;
 
 const STACK_CAPACITY: usize = 1024;
 
-#[derive(Debug, Error)]
-enum KvmError {
-    #[error("Stack overflow error")]
-    StackOverflow,
-    #[error("Stack underflow")]
-    StackUnderflow,
-    #[error("Division by zero")]
-    DivisionByZero,
-}
 struct Kvm {
     stack: Vec<i32>,
     program: Vec<Instruction>,
