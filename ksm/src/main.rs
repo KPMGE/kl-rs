@@ -1,4 +1,4 @@
-use kvm::instruction::Instruction;
+use kvm::Instruction;
 use std::env;
 use std::error::Error;
 

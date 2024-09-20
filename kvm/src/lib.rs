@@ -1,9 +1,12 @@
 pub mod instruction;
 pub mod error;
+pub mod kvm;
+
+pub use instruction::*;
+pub use error::*;
+pub use kvm::*;
 
 use std::{fmt::Display, fs::File, io::Write};
-
-use instruction::Instruction;
 
 // TODO: find a better place for this function
 pub fn save_program_to_file(program: Vec<Instruction>, file_path: &str) {
