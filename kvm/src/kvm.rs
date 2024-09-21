@@ -4,6 +4,7 @@ use std::io::Read;
 use crate::{error::KvmError, instruction::Instruction};
 
 const STACK_CAPACITY: usize = 1024;
+const MAX_INSTRUCTIONS: usize = 1000;
 
 pub struct Kvm {
     stack: Vec<i32>,
@@ -23,10 +24,8 @@ impl Kvm {
     }
 
     pub fn execute_program(&mut self) -> Result<(), KvmError> {
-        let n = 100;
-        for _ in 0..n {
+        for _ in 0..MAX_INSTRUCTIONS {
             if self.halt {
-                println!("HALT");
                 break;
             }
 
@@ -35,6 +34,10 @@ impl Kvm {
         }
 
         Ok(())
+    }
+
+    pub fn get_instructions(&self) -> &Vec<Instruction> {
+        &self.program
     }
 
     pub fn load_program_from_vec(&mut self, prog: Vec<Instruction>) {
