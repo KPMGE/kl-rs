@@ -1,5 +1,5 @@
 use kvm::{Instruction, Kvm};
-use std::error::Error;
+use std::{error::Error, fs::File, io::Write};
 
 use clap::Parser;
 
@@ -31,13 +31,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             .map(|line| line.trim().try_into().unwrap())
             .collect();
 
-        println!("prog: {:?}", prog_inst);
         // TODO: handle option without expect
-        kvm::save_program_to_file(
+        save_program_to_file(
             &prog_inst,
             &args.output_file.expect("Expected output file!"),
         );
     }
 
     Ok(())
+}
+
+fn save_program_to_file(program: &Vec<Instruction>, file_path: &str) {
+    let mut file = File::create(file_path).unwrap();
+    let prog_bin: Vec<u8> = program.iter().flat_map(|inst| inst.as_bytes()).collect();
+    file.write_all(prog_bin.as_ref()).unwrap();
 }

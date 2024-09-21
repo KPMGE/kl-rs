@@ -1,19 +1,12 @@
-pub mod instruction;
 pub mod error;
+pub mod instruction;
 pub mod kvm;
 
-pub use instruction::*;
 pub use error::*;
+pub use instruction::*;
 pub use kvm::*;
 
-use std::{fmt::Display, fs::File, io::Write};
-
-// TODO: find a better place for this function
-pub fn save_program_to_file(program: Vec<Instruction>, file_path: &str) {
-    let mut file = File::create(file_path).unwrap();
-    let prog_bin: Vec<u8> = program.iter().flat_map(|inst| inst.as_bytes()).collect();
-    file.write_all(prog_bin.as_ref()).unwrap();
-}
+use std::fmt::Display;
 
 impl TryFrom<&str> for Instruction {
     // TODO: add better error
@@ -36,7 +29,7 @@ impl TryFrom<&str> for Instruction {
 
                 Ok(Instruction::Push(n))
             }
-            _ if value.starts_with("jmp") => {
+            _ if value.starts_with("jmpif") => {
                 let n = value
                     .split_whitespace()
                     .nth(1)
@@ -44,9 +37,9 @@ impl TryFrom<&str> for Instruction {
                     .parse::<u32>()
                     .map_err(|e| format!("{:?}", e))?;
 
-                Ok(Instruction::Jmp(n))
+                Ok(Instruction::JmpIf(n))
             }
-            _ if value.starts_with("jmpif") => {
+            _ if value.starts_with("jmp") => {
                 let n = value
                     .split_whitespace()
                     .nth(1)
@@ -54,7 +47,7 @@ impl TryFrom<&str> for Instruction {
                     .parse::<u32>()
                     .map_err(|e| format!("{:?}", e))?;
 
-                Ok(Instruction::JmpIf(n))
+                Ok(Instruction::Jmp(n))
             }
             _ if value.starts_with("dup") => {
                 let n = value
