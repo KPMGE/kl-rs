@@ -109,7 +109,7 @@ impl Kvm {
                     i += 4;
                     Instruction::Dup(addr)
                 }
-                _ => panic!("Invalid instruction!"),
+                upcode => panic!("Unknown instruction upcode {}", upcode),
             };
 
             instructions.push(inst);
