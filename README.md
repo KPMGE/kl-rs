@@ -83,7 +83,6 @@ It's possible to comment code out using the syntax:
 This syntax works for both, single line and multiline comments!
 
 
-
 ## How to run it?
 In order to run this project on you machine, first make sure you got [rust](https://www.rust-lang.org/)
 correctly installed.
@@ -91,7 +90,7 @@ correctly installed.
 Then, you can run it directly using cargo with the following command:
 
 ```bash
-cargo run
+cargo run --bin kl-rs
 ```
 
 Afterwards, a REPL will appear and you can start writing kl-rs code!
@@ -100,20 +99,8 @@ There are a couple flags that you can use to inspect this program, you can see
 all of them using the command:
 
 ```bash
-cargo run -- -h
+cargo run --bin kl-rs -- -v
 ```
-
-
-## How to build it?
-Building this project is extremely straightforward, you just run: 
-
-```bash
-cargo build --release
-```
-
-After that, an executable will be generated in the folder
-`target/release/kl-rs`, then you can just use it like normal
-
 
 ## TODOS
 - [x] Add support for math expressions
@@ -130,3 +117,24 @@ After that, an executable will be generated in the folder
 - [ ] Add support for hashes
 - [ ] Refactor tests
 - [ ] Optimize project
+
+## Virtual Machine
+On top of the kl-rs programming language, this project also has a simple stack-based virtual machine, intented to run kl-rs code(not yet finished).
+This virtual machine has an assembly-like language, called `ksm`. This assembly language is intented to be human-readable and you can even create programs in it
+Check `ksm/examples/` to get some examples.
+
+The virtual machine itself, called `kvm` doesn't run the `ksm` code directly though, it runs a bytecode of it, just like in `x86` assembly, when you compile it, it
+is not human-readable anymore, but optimized for running.
+
+In order to compile a `ksm` program, you can run the following command:
+
+```bash
+cargo run --bin ksm -- -i ksm/examples/fibonacci.ksm -o fibonacci.kvm
+```
+
+As you might expect, the `-i` or `--input` flag tells the ksm what the input program is. The `-o` or `--output` flat states 
+what the output should be. After that, you can run your `kvm` code on the virtual machine, by running the command:
+
+```bash
+cargo run --bin kvm -- fibonacci.kvm
+```
