@@ -78,53 +78,43 @@ impl Kvm {
                 0x4 => Instruction::Mul,
                 0x5 => Instruction::Eq,
                 0x6 => {
-                    // TODO: find a better way to construct this
-                    let num = i32::from_le_bytes([
-                        buffer[i + 1],
-                        buffer[i + 2],
-                        buffer[i + 3],
-                        buffer[i + 4],
-                    ]);
-                    // skip 4 bytes
-                    i += 4;
+                    let slice: [u8; 4] = buffer[i + 1..i + 5]
+                        .try_into()
+                        .expect("Could not convert push value to a number!");
+                    let num = i32::from_le_bytes(slice);
+
+                    i += std::mem::size_of::<i32>();
+
                     Instruction::Push(num)
                 }
                 0x7 => {
-                    // TODO: find a better way to construct this
-                    let addr = u32::from_le_bytes([
-                        buffer[i + 1],
-                        buffer[i + 2],
-                        buffer[i + 3],
-                        buffer[i + 4],
-                    ]);
-                    // skip 4 bytes
-                    i += 4;
+                    let slice: [u8; 4] = buffer[i + 1..i + 5]
+                        .try_into()
+                        .expect("Could not convert push value to a number!");
+                    let addr = u32::from_le_bytes(slice);
+
+                    i += std::mem::size_of::<u32>();
 
                     Instruction::Jmp(addr)
                 }
                 0x8 => {
-                    // TODO: find a better way to construct this
-                    let addr = u32::from_le_bytes([
-                        buffer[i + 1],
-                        buffer[i + 2],
-                        buffer[i + 3],
-                        buffer[i + 4],
-                    ]);
-                    // skip 4 bytes
-                    i += 4;
+                    let slice: [u8; 4] = buffer[i + 1..i + 5]
+                        .try_into()
+                        .expect("Could not convert push value to a number!");
+                    let addr = u32::from_le_bytes(slice);
+
+                    i += std::mem::size_of::<u32>();
 
                     Instruction::JmpIf(addr)
                 }
                 0x9 => {
-                    // TODO: find a better way to construct this
-                    let addr = u32::from_le_bytes([
-                        buffer[i + 1],
-                        buffer[i + 2],
-                        buffer[i + 3],
-                        buffer[i + 4],
-                    ]);
-                    // skip 4 bytes
-                    i += 4;
+                    let slice: [u8; 4] = buffer[i + 1..i + 5]
+                        .try_into()
+                        .expect("Could not convert push value to a number!");
+                    let addr = u32::from_le_bytes(slice);
+
+                    i += std::mem::size_of::<u32>();
+
                     Instruction::Dup(addr)
                 }
                 0x10 => {
