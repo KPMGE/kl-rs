@@ -5,6 +5,7 @@ use crate::{error::KvmError, instruction::Instruction};
 
 const STACK_CAPACITY: usize = 1024;
 const MAX_INSTRUCTIONS: usize = 1000;
+const STRING_POOL_CAPACITY: usize = 1024;
 
 pub struct Kvm {
     stack: Vec<i32>,
@@ -18,8 +19,8 @@ impl Kvm {
     pub fn new() -> Self {
         Kvm {
             stack: Vec::with_capacity(STACK_CAPACITY),
-            program: Vec::new(),
-            string_pool: Vec::new(),
+            program: Vec::with_capacity(MAX_INSTRUCTIONS),
+            string_pool: Vec::with_capacity(STRING_POOL_CAPACITY),
             ip: 0,
             halt: false,
         }
