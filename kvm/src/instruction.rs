@@ -10,4 +10,7 @@ pub enum Instruction {
     Jmp(u32),
     JmpIf(u32),
     Dup(u32),
+    PushStr(String),
+    PrintStack,
+    PrintStr,
 }

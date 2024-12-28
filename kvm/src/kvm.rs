@@ -9,6 +9,7 @@ const MAX_INSTRUCTIONS: usize = 1000;
 pub struct Kvm {
     stack: Vec<i32>,
     program: Vec<Instruction>,
+    string_pool: Vec<String>,
     ip: usize,
     halt: bool,
 }
@@ -18,6 +19,7 @@ impl Kvm {
         Kvm {
             stack: Vec::with_capacity(STACK_CAPACITY),
             program: Vec::new(),
+            string_pool: Vec::new(),
             ip: 0,
             halt: false,
         }
@@ -44,6 +46,17 @@ impl Kvm {
         self.program.extend(prog);
     }
 
+    fn extract_string_from_bytes(&self, bytes: &[u8]) -> Option<String> {
+        if let Ok(text) = std::str::from_utf8(bytes) {
+            if let (Some(start), Some(end)) = (text.find('"'), text.rfind('"')) {
+                if start < end {
+                    return Some(text[start + 1..end].to_string());
+                }
+            }
+        }
+        None
+    }
+
     pub fn load_program_from_file(&mut self, file_path: &str) {
         let mut file = File::open(file_path).unwrap();
 
@@ -53,6 +66,7 @@ impl Kvm {
         let mut instructions = Vec::new();
         let mut i = 0;
 
+        // TODO: find a better way to map byte code to instructions
         while i < buffer.len() {
             let byte = buffer[i];
 
@@ -64,6 +78,7 @@ impl Kvm {
                 0x4 => Instruction::Mul,
                 0x5 => Instruction::Eq,
                 0x6 => {
+                    // TODO: find a better way to construct this
                     let num = i32::from_le_bytes([
                         buffer[i + 1],
                         buffer[i + 2],
@@ -75,6 +90,7 @@ impl Kvm {
                     Instruction::Push(num)
                 }
                 0x7 => {
+                    // TODO: find a better way to construct this
                     let addr = u32::from_le_bytes([
                         buffer[i + 1],
                         buffer[i + 2],
@@ -87,6 +103,7 @@ impl Kvm {
                     Instruction::Jmp(addr)
                 }
                 0x8 => {
+                    // TODO: find a better way to construct this
                     let addr = u32::from_le_bytes([
                         buffer[i + 1],
                         buffer[i + 2],
@@ -99,6 +116,7 @@ impl Kvm {
                     Instruction::JmpIf(addr)
                 }
                 0x9 => {
+                    // TODO: find a better way to construct this
                     let addr = u32::from_le_bytes([
                         buffer[i + 1],
                         buffer[i + 2],
@@ -109,6 +127,18 @@ impl Kvm {
                     i += 4;
                     Instruction::Dup(addr)
                 }
+                0x10 => {
+                    let str = self
+                        .extract_string_from_bytes(&buffer)
+                        .expect("Could not extract string from bytes");
+
+                    // skip "" and the string
+                    i += str.len() + 2;
+
+                    Instruction::PushStr(str.to_string())
+                }
+                0x11 => Instruction::PrintStack,
+                0x12 => Instruction::PrintStr,
                 upcode => panic!("Unknown instruction upcode {}", upcode),
             };
 
@@ -204,6 +234,30 @@ impl Kvm {
                 } else {
                     self.ip += 1;
                 }
+            }
+            Instruction::PushStr(s) => {
+                self.string_pool.push(s);
+                self.ip += 1;
+            }
+            Instruction::PrintStack => {
+                println!(
+                    "{}",
+                    match self.stack.pop() {
+                        Some(i) => i.to_string(),
+                        None => "Empty".to_string(),
+                    }
+                );
+                self.ip += 1;
+            }
+            Instruction::PrintStr => {
+                println!(
+                    "{}",
+                    match self.string_pool.pop() {
+                        Some(i) => i.to_string(),
+                        None => "Empty".to_string(),
+                    }
+                );
+                self.ip += 1;
             }
         };
 

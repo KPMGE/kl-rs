@@ -10,6 +10,7 @@ use std::fmt::Display;
 
 impl TryFrom<&str> for Instruction {
     // TODO: add better error
+    // TODO: refactor this implementation
     type Error = String;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
@@ -19,6 +20,19 @@ impl TryFrom<&str> for Instruction {
             "div" => Ok(Instruction::Div),
             "mul" => Ok(Instruction::Mul),
             "eq" => Ok(Instruction::Eq),
+            "print_str" => Ok(Instruction::PrintStr),
+            "print_stack" => Ok(Instruction::PrintStack),
+            _ if value.starts_with("push_str") => {
+                let str = value
+                    .split_once(' ')
+                    .ok_or_else(|| "could not get argument for push_str".to_string())?
+                    .1;
+
+                println!("PUSHING STRING: {str}");
+
+                Ok(Instruction::PushStr(str.to_string()))
+            }
+            // TODO: get rid of these starts_with
             _ if value.starts_with("push") => {
                 let n = value
                     .split_whitespace()
@@ -79,11 +93,15 @@ impl Display for Instruction {
             Instruction::Jmp(addr) => format!("jmp {}", addr),
             Instruction::JmpIf(addr) => format!("jmpif {}", addr),
             Instruction::Dup(addr) => format!("dup {}", addr),
+            Instruction::PushStr(str) => format!("push_str {}", str),
+            Instruction::PrintStack => "print_stack".to_string(),
+            Instruction::PrintStr => "print_str".to_string(),
         };
         write!(f, "{}", s)
     }
 }
 
+// TODO: find a better way to convert these to byte code
 impl Instruction {
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
@@ -110,6 +128,16 @@ impl Instruction {
             Instruction::Dup(n) => {
                 bytes.push(0x9);
                 bytes.extend(n.to_le_bytes());
+            }
+            Instruction::PushStr(str) => {
+                bytes.push(0x10);
+                bytes.extend(str.bytes());
+            }
+            Instruction::PrintStack => {
+                bytes.push(0x11);
+            }
+            Instruction::PrintStr => {
+                bytes.push(0x12);
             }
         };
 

@@ -12,10 +12,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut vm = Kvm::new();
 
     vm.load_program_from_file(&args[1]);
-    vm.dump_program();
+    // vm.dump_program();
     vm.execute_program()?;
-    println!("--------");
-    vm.dump_stack();
+    // println!("--------");
+    // vm.dump_stack();
 
     Ok(())
 }
