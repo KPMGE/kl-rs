@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn save_program_to_file(program: &Vec<Instruction>, file_path: &str) {
+fn save_program_to_file(program: &[Instruction], file_path: &str) {
     let mut file = File::create(file_path).unwrap();
     let prog_bin: Vec<u8> = program.iter().flat_map(|inst| inst.as_bytes()).collect();
     file.write_all(prog_bin.as_ref()).unwrap();

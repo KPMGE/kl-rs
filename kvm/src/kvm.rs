@@ -38,7 +38,7 @@ impl Kvm {
         Ok(())
     }
 
-    pub fn get_instructions(&self) -> &Vec<Instruction> {
+    pub fn get_instructions(&self) -> &[Instruction] {
         &self.program
     }
 
