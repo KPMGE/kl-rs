@@ -71,13 +71,15 @@ impl Kvm {
             let byte = buffer[i];
 
             let inst = match byte {
-                0x0 => Instruction::Halt,
-                0x1 => Instruction::Add,
-                0x2 => Instruction::Sub,
-                0x3 => Instruction::Div,
-                0x4 => Instruction::Mul,
-                0x5 => Instruction::Eq,
-                0x6 => {
+                _ if byte == Instruction::Halt.upcode() => Instruction::Halt,
+                _ if byte == Instruction::Add.upcode() => Instruction::Add,
+                _ if byte == Instruction::Sub.upcode() => Instruction::Sub,
+                _ if byte == Instruction::Div.upcode() => Instruction::Div,
+                _ if byte == Instruction::Mul.upcode() => Instruction::Mul,
+                _ if byte == Instruction::Eq.upcode() => Instruction::Eq,
+                _ if byte == Instruction::PrintStack.upcode() => Instruction::PrintStack,
+                _ if byte == Instruction::PrintStr.upcode() => Instruction::PrintStr,
+                _ if byte == Instruction::Push(0).upcode() => {
                     let slice: [u8; 4] = buffer[i + 1..i + 5]
                         .try_into()
                         .expect("Could not convert push value to a number!");
@@ -87,7 +89,7 @@ impl Kvm {
 
                     Instruction::Push(num)
                 }
-                0x7 => {
+                _ if byte == Instruction::Jmp(0).upcode()  => {
                     let slice: [u8; 4] = buffer[i + 1..i + 5]
                         .try_into()
                         .expect("Could not convert push value to a number!");
@@ -97,7 +99,7 @@ impl Kvm {
 
                     Instruction::Jmp(addr)
                 }
-                0x8 => {
+                _ if byte == Instruction::JmpIf(0).upcode() => {
                     let slice: [u8; 4] = buffer[i + 1..i + 5]
                         .try_into()
                         .expect("Could not convert push value to a number!");
@@ -107,7 +109,7 @@ impl Kvm {
 
                     Instruction::JmpIf(addr)
                 }
-                0x9 => {
+                _ if byte == Instruction::Dup(0).upcode() => {
                     let slice: [u8; 4] = buffer[i + 1..i + 5]
                         .try_into()
                         .expect("Could not convert push value to a number!");
@@ -117,7 +119,7 @@ impl Kvm {
 
                     Instruction::Dup(addr)
                 }
-                0x10 => {
+                _ if byte == Instruction::PushStr("".to_string()).upcode() => {
                     let str = self
                         .extract_string_from_bytes(&buffer)
                         .expect("Could not extract string from bytes");
@@ -127,8 +129,6 @@ impl Kvm {
 
                     Instruction::PushStr(str.to_string())
                 }
-                0x11 => Instruction::PrintStack,
-                0x12 => Instruction::PrintStr,
                 upcode => panic!("Unknown instruction upcode {}", upcode),
             };
 

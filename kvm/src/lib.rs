@@ -10,10 +10,11 @@ use std::fmt::Display;
 
 impl TryFrom<&str> for Instruction {
     // TODO: add better error
-    // TODO: refactor this implementation
     type Error = String;
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value {
+        let inst = value.split_whitespace().nth(0).unwrap();
+
+        match inst {
             "halt" => Ok(Instruction::Halt),
             "add" => Ok(Instruction::Add),
             "sub" => Ok(Instruction::Sub),
@@ -22,18 +23,15 @@ impl TryFrom<&str> for Instruction {
             "eq" => Ok(Instruction::Eq),
             "print_str" => Ok(Instruction::PrintStr),
             "print_stack" => Ok(Instruction::PrintStack),
-            _ if value.starts_with("push_str") => {
+            "push_str" => {
                 let str = value
                     .split_once(' ')
                     .ok_or_else(|| "could not get argument for push_str".to_string())?
                     .1;
 
-                println!("PUSHING STRING: {str}");
-
                 Ok(Instruction::PushStr(str.to_string()))
             }
-            // TODO: get rid of these starts_with
-            _ if value.starts_with("push") => {
+            "push" => {
                 let n = value
                     .split_whitespace()
                     .nth(1)
@@ -43,7 +41,7 @@ impl TryFrom<&str> for Instruction {
 
                 Ok(Instruction::Push(n))
             }
-            _ if value.starts_with("jmpif") => {
+            "jmpif" => {
                 let n = value
                     .split_whitespace()
                     .nth(1)
@@ -53,7 +51,7 @@ impl TryFrom<&str> for Instruction {
 
                 Ok(Instruction::JmpIf(n))
             }
-            _ if value.starts_with("jmp") => {
+            "jmp" => {
                 let n = value
                     .split_whitespace()
                     .nth(1)
@@ -63,7 +61,7 @@ impl TryFrom<&str> for Instruction {
 
                 Ok(Instruction::Jmp(n))
             }
-            _ if value.starts_with("dup") => {
+            "dup" => {
                 let n = value
                     .split_whitespace()
                     .nth(1)
@@ -101,43 +99,56 @@ impl Display for Instruction {
     }
 }
 
-// TODO: find a better way to convert these to byte code
 impl Instruction {
+    pub fn upcode(&self) -> u8 {
+        match self {
+            Instruction::Halt => 0x0,
+            Instruction::Add => 0x1,
+            Instruction::Sub => 0x2,
+            Instruction::Div => 0x3,
+            Instruction::Mul => 0x4,
+            Instruction::Eq => 0x5,
+            Instruction::Push(_) => 0x6,
+            Instruction::Jmp(_) => 0x7,
+            Instruction::JmpIf(_) => 0x8,
+            Instruction::Dup(_) => 0x9,
+            Instruction::PushStr(_) => 0x10,
+            Instruction::PrintStack => 0x11,
+            Instruction::PrintStr => 0x12,
+        }
+    }
+
     pub fn as_bytes(&self) -> Vec<u8> {
         let mut bytes = Vec::new();
 
         match self {
-            Instruction::Halt => bytes.push(0x0),
-            Instruction::Add => bytes.push(0x1),
-            Instruction::Sub => bytes.push(0x2),
-            Instruction::Div => bytes.push(0x3),
-            Instruction::Mul => bytes.push(0x4),
-            Instruction::Eq => bytes.push(0x5),
+            Instruction::Halt => bytes.push(Instruction::Halt.upcode()),
+            Instruction::Add => bytes.push(Instruction::Add.upcode()),
+            Instruction::Sub => bytes.push(Instruction::Sub.upcode()),
+            Instruction::Div => bytes.push(Instruction::Div.upcode()),
+            Instruction::Mul => bytes.push(Instruction::Mul.upcode()),
+            Instruction::Eq => bytes.push(Instruction::Eq.upcode()),
+            Instruction::PrintStack => bytes.push(Instruction::PrintStack.upcode()),
+            Instruction::PrintStr => bytes.push(Instruction::PrintStr.upcode()),
             Instruction::Push(n) => {
-                bytes.push(0x6);
+                bytes.push(Instruction::Push(0).upcode());
                 bytes.extend(n.to_le_bytes());
             }
             Instruction::Jmp(n) => {
-                bytes.push(0x7);
+                bytes.push(Instruction::Jmp(0).upcode());
                 bytes.extend(n.to_le_bytes());
             }
             Instruction::JmpIf(n) => {
-                bytes.push(0x8);
+                bytes.push(Instruction::JmpIf(0).upcode());
                 bytes.extend(n.to_le_bytes());
             }
             Instruction::Dup(n) => {
-                bytes.push(0x9);
+                bytes.push(Instruction::Dup(0).upcode());
                 bytes.extend(n.to_le_bytes());
             }
             Instruction::PushStr(str) => {
-                bytes.push(0x10);
+                bytes.push(Instruction::PushStr("".to_string()).upcode());
                 bytes.extend(str.bytes());
-            }
-            Instruction::PrintStack => {
-                bytes.push(0x11);
-            }
-            Instruction::PrintStr => {
-                bytes.push(0x12);
             }
         };
 
