@@ -21,7 +21,7 @@ impl Display for Instruction {
             Instruction::Jmp(addr) => format!("jmp {}", addr),
             Instruction::JmpIf(addr) => format!("jmpif {}", addr),
             Instruction::Dup(addr) => format!("dup {}", addr),
-            Instruction::PushStr(str) => format!("pushstr {}", str),
+            Instruction::PushStr(str) => format!("pushstr \"{}\"", str),
             Instruction::PrintStack => "printstack".to_string(),
             Instruction::PrintStr => "printstr".to_string(),
         };
