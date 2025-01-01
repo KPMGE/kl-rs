@@ -21,9 +21,9 @@ impl TryFrom<&str> for Instruction {
             "div" => Ok(Instruction::Div),
             "mul" => Ok(Instruction::Mul),
             "eq" => Ok(Instruction::Eq),
-            "print_str" => Ok(Instruction::PrintStr),
-            "print_stack" => Ok(Instruction::PrintStack),
-            "push_str" => {
+            "printstr" => Ok(Instruction::PrintStr),
+            "printstack" => Ok(Instruction::PrintStack),
+            "pushstr" => {
                 let str = value
                     .split_once(' ')
                     .ok_or_else(|| "could not get argument for push_str".to_string())?
@@ -91,9 +91,9 @@ impl Display for Instruction {
             Instruction::Jmp(addr) => format!("jmp {}", addr),
             Instruction::JmpIf(addr) => format!("jmpif {}", addr),
             Instruction::Dup(addr) => format!("dup {}", addr),
-            Instruction::PushStr(str) => format!("push_str {}", str),
-            Instruction::PrintStack => "print_stack".to_string(),
-            Instruction::PrintStr => "print_str".to_string(),
+            Instruction::PushStr(str) => format!("pushstr {}", str),
+            Instruction::PrintStack => "printstack".to_string(),
+            Instruction::PrintStr => "printstr".to_string(),
         };
         write!(f, "{}", s)
     }

@@ -5,7 +5,7 @@ dup 1
 add
 dup 0
 dup 0
-print_stack
+printstack
 push 144
 eq
 jmpif 12
