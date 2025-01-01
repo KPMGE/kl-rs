@@ -1,3 +1,6 @@
+/* push a string onto stack
 pushstr "Hello world."
+/* print string on top of the stack */
 printstr
+/* stop program */
 halt

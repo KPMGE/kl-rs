@@ -1,13 +1,23 @@
+/* push the first 2 elements onto the stack */
 push 0
 push 1
+/* duplicate the 2 elements on top of the stack */
 dup 1
 dup 1
+/* add them together to get the next element */
 add
+/* duplicate the element on top of the stack twice(it will be consumed by the next instruction) */
 dup 0
 dup 0
+/* displays the element on top of the stack(consuming it) */
 printstack
+/* push the limit element on top of the stack */
 push 144
+/* compare the limit with the actual number on top of the stack */
 eq
+/* checks if the program should stop */
 jmpif 12
+/* jump back to the init of the loop */
 jmp 2
+/* stop the program */
 halt

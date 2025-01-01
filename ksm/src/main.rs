@@ -3,6 +3,8 @@ use std::{error::Error, fs::File, io::Write};
 
 use clap::Parser;
 
+mod lexer;
+
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
@@ -26,10 +28,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         instructions.iter().for_each(|inst| println!("{}", inst));
     } else {
         let prog_asm = std::fs::read_to_string(args.input_file)?;
-        let prog_inst: Vec<Instruction> = prog_asm
-            .lines()
-            .map(|line| line.trim().try_into().unwrap())
-            .collect();
+
+        let lexer = lexer::Lexer::new(&prog_asm);
+        let prog_inst: Vec<Instruction> = lexer.collect();
 
         // TODO: handle option without expect
         save_program_to_file(

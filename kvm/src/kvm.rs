@@ -47,6 +47,7 @@ impl Kvm {
         self.program.extend(prog);
     }
 
+    // TODO: handle strings without relying on ""
     fn extract_string_from_bytes(&self, bytes: &[u8]) -> Option<String> {
         if let Ok(text) = std::str::from_utf8(bytes) {
             if let (Some(start), Some(end)) = (text.find('"'), text.rfind('"')) {
@@ -125,6 +126,7 @@ impl Kvm {
                         .extract_string_from_bytes(&buffer)
                         .expect("Could not extract string from bytes");
 
+                    // TODO: handle strings without relying on ""
                     // skip "" and the string
                     i += str.len() + 2;
 
